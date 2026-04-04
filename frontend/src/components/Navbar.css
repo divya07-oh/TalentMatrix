@@ -1,0 +1,180 @@
+.top-navbar {
+  height: 80px;
+  background-color: var(--matrix-bg);
+  border-bottom: 1px solid var(--matrix-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4rem;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  transition: var(--transition);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.icon-btn {
+  background: transparent;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--matrix-text-dim);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
+  color: var(--matrix-accent);
+  border-color: var(--matrix-border);
+  background: rgba(212, 175, 55, 0.03);
+}
+
+.notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  background: var(--matrix-accent);
+  color: #000;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--matrix-bg);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.5rem 1rem;
+  padding-left: 2rem;
+  border-left: 1px solid var(--matrix-border);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.user-profile:hover {
+  background: rgba(212, 175, 55, 0.02);
+}
+
+.user-info {
+  text-align: right;
+}
+
+.user-name {
+  display: block;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.user-role {
+  display: block;
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: var(--matrix-accent);
+  opacity: 0.6;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--matrix-accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.chevron {
+  color: var(--matrix-text-dim);
+  opacity: 0.5;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 1px);
+  right: -1px;
+  width: 220px;
+  background: var(--matrix-bg);
+  border: 1px solid var(--matrix-border);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.dropdown-item {
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--matrix-text-dim);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(212, 175, 55, 0.03);
+  color: var(--matrix-accent);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--matrix-border);
+  margin: 0.5rem;
+}
+
+.logout {
+  color: #ef4444;
+}
+
+.logout:hover {
+  background: rgba(239, 68, 68, 0.05);
+  color: #ef4444;
+}
+
+/* Admin Breadcrumb Alignment */
+.admin-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  color: var(--matrix-text);
+  font-family: var(--font-primary);
+}
+
+.breadcrumb-text {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.logout-nav-btn:hover {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.1);
+}
+
+.logout-nav-btn:hover .lucide-logout {
+  color: #ef4444 !important;
+}

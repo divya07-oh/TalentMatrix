@@ -1,0 +1,200 @@
+.student-management-container {
+  display: flex;
+  flex-direction: column;
+  padding: 4rem;
+  position: relative;
+  z-index: 10;
+}
+
+.management-header {
+  margin-bottom: 6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--matrix-border);
+  padding-bottom: 3rem;
+}
+
+.search-filter-row {
+  display: flex;
+  gap: 1px;
+  background: var(--matrix-border);
+  margin-bottom: 4rem;
+}
+
+.search-input-wrapper {
+  flex: 3;
+  position: relative;
+  background: var(--matrix-card-bg);
+  padding: 1.5rem 2rem;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0.5rem 1rem 0.5rem 2.5rem;
+  color: var(--matrix-text);
+  font-family: var(--font-institutional);
+  font-size: 1rem;
+  outline: none;
+}
+
+.search-icon-mgmt {
+  position: absolute;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--matrix-accent);
+  opacity: 0.6;
+}
+
+.filter-group {
+  flex: 1;
+  background: var(--matrix-card-bg);
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filter-select {
+  background: transparent;
+  border: none;
+  color: var(--matrix-accent);
+  font-family: monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  outline: none;
+  width: 100%;
+}
+
+.filter-select option {
+  background: var(--matrix-bg);
+  color: var(--matrix-text);
+}
+
+.students-table-card {
+  background: var(--matrix-border);
+  gap: 1px;
+  display: flex;
+  flex-direction: column;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--matrix-bg);
+}
+
+.students-table th {
+  padding: 2rem;
+  background: var(--matrix-card-bg);
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: var(--matrix-accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: left;
+  border-bottom: 1px solid var(--matrix-border);
+}
+
+.students-table td {
+  padding: 2rem;
+  border-bottom: 1px solid var(--matrix-border);
+  transition: all 0.3s ease;
+}
+
+.students-table tr:hover td {
+  background: var(--matrix-grid);
+}
+
+.student-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.student-avatar {
+  width: 44px;
+  height: 44px;
+  background: var(--matrix-accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.student-details .st-name {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.student-details .st-email {
+  font-size: 0.8rem;
+  color: var(--matrix-text-dim);
+}
+
+.skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skill-tag-pill {
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: var(--matrix-accent);
+  border: 1px solid var(--matrix-border);
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.score-badge {
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--matrix-accent);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 1rem;
+}
+
+.action-btn-sm {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--matrix-border);
+  color: var(--matrix-text-dim);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.action-btn-sm:hover {
+  border-color: var(--matrix-accent);
+  color: var(--matrix-accent);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.action-btn-sm.delete:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+@media (max-width: 1024px) {
+  .search-filter-row { flex-direction: column; }
+  .students-table th:nth-child(3), 
+  .students-table td:nth-child(3) { display: none; }
+}

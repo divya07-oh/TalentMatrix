@@ -1,0 +1,158 @@
+.collab-page-container {
+  display: flex;
+  flex-direction: column;
+  padding: 4rem;
+  z-index: 10;
+  position: relative;
+}
+
+.collab-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--matrix-border);
+}
+
+.collab-section {
+  background: var(--matrix-bg);
+  padding: 4rem 3rem;
+}
+
+.collab-section h2 {
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+  margin-bottom: 3rem;
+}
+
+.collab-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.collab-card {
+  background: var(--matrix-card-bg);
+  padding: 3rem 0;
+  border-bottom: 1px solid var(--matrix-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.collab-card:hover {
+  background: var(--matrix-grid);
+  padding-left: 1rem;
+}
+
+.collab-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.avatar-sm {
+  width: 44px;
+  height: 44px;
+  background: var(--matrix-accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.header-info h4 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.2rem;
+}
+
+.college-tag {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: var(--matrix-accent);
+  opacity: 0.6;
+}
+
+.date-text {
+  position: absolute;
+  top: 3rem;
+  right: 0;
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: var(--matrix-text-dim);
+}
+
+.collab-card-body p {
+  font-size: 0.95rem;
+  color: var(--matrix-text-dim);
+  line-height: 1.6;
+}
+
+.collab-card-body strong {
+  color: var(--matrix-text);
+  font-weight: 800;
+}
+
+.collab-card-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.accept-btn {
+  flex: 1;
+}
+
+.reject-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.7rem;
+  padding: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.reject-btn:hover {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: #ef4444;
+}
+
+.status-badge {
+  position: absolute;
+  top: 3rem;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: var(--matrix-accent);
+  padding: 4px 10px;
+  border: 1px solid var(--matrix-border);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 1280px) {
+  .collab-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .collab-section { padding: 3rem 1.5rem; }
+  .collab-card-header { flex-direction: column; align-items: flex-start; }
+  .date-text, .status-badge { position: static; margin-top: 1rem; }
+}

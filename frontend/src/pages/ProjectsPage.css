@@ -1,0 +1,176 @@
+.projects-container {
+  display: flex;
+  flex-direction: column;
+  padding: 4rem;
+  z-index: 10;
+  position: relative;
+}
+
+.project-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.icon-btn-bordered {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: 1px solid var(--matrix-border);
+  color: var(--matrix-text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.icon-btn-bordered:hover {
+  border-color: var(--matrix-accent);
+  color: var(--matrix-accent);
+  background: var(--matrix-grid);
+}
+
+.project-main-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1px;
+  background: var(--matrix-border);
+}
+
+.project-card {
+  background: var(--matrix-bg);
+  padding: 4rem 3rem;
+  border-bottom: 1px solid var(--matrix-border);
+}
+
+.project-card h3 {
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 2rem;
+}
+
+.project-card p {
+  color: var(--matrix-text-dim);
+  line-height: 1.8;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.progress-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.progress-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.progress-input-wrapper input {
+  width: 100px;
+  background: var(--matrix-card-bg);
+  border: 1px solid var(--matrix-border);
+  padding: 1rem;
+  color: var(--matrix-accent);
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+}
+
+.progress-input-wrapper span {
+  font-size: 1.5rem;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.progress-visual-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--matrix-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--matrix-accent);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: var(--matrix-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Team - Matrix Nodes */
+.card-header-icon {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.member-info strong {
+  display: block;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.member-info span {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: var(--matrix-accent);
+  opacity: 0.6;
+}
+
+.bg-primary-dark {
+  background: var(--matrix-grid);
+  position: relative;
+}
+
+.boost-badge {
+  position: absolute;
+  right: 2rem;
+  bottom: 2rem;
+  font-size: 6rem;
+  font-weight: 900;
+  color: var(--matrix-accent);
+  opacity: 0.05;
+  line-height: 1;
+}
+
+@media (max-width: 1200px) {
+  .project-main-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .project-card { padding: 3rem 2rem; }
+  .content-header h1 { font-size: 2.5rem; }
+}

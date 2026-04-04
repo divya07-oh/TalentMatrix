@@ -1,0 +1,165 @@
+.verification-container {
+  display: flex;
+  flex-direction: column;
+  padding: 4rem;
+  position: relative;
+  z-index: 10;
+}
+
+.verification-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1px;
+  background: var(--matrix-border);
+}
+
+.verification-card {
+  background: var(--matrix-card-bg);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.verification-card:hover {
+  background: var(--matrix-grid);
+}
+
+.card-header-v {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.v-student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.v-student-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--matrix-text);
+}
+
+.v-timestamp {
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: var(--matrix-accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.v-skill-badge {
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: var(--matrix-accent);
+  border: 1px solid var(--matrix-border);
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.v-skill-content h4 {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+
+.v-proof-box {
+  background: var(--matrix-bg);
+  border: 1px solid var(--matrix-border);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.v-proof-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.proof-icon {
+  color: var(--matrix-accent);
+  opacity: 0.6;
+}
+
+.proof-type {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--matrix-accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: block;
+}
+
+.v-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--matrix-border);
+  margin-top: 1rem;
+}
+
+.v-btn {
+  padding: 1.25rem;
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  border: none;
+  font-family: var(--font-institutional);
+}
+
+.v-btn-approve {
+  background: var(--matrix-accent);
+  color: #000;
+}
+
+.v-btn-approve:hover {
+  background: #E5C158;
+}
+
+.v-btn-reject {
+  background: var(--matrix-card-bg);
+  color: #ef4444;
+}
+
+.v-btn-reject:hover {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.empty-state-v {
+  background: var(--matrix-card-bg);
+  padding: 6rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  text-align: center;
+  border: 1px solid var(--matrix-border);
+}
+
+.empty-state-v h3 {
+  font-size: 2rem;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+}
+
+@media (max-width: 768px) {
+  .verification-grid { grid-template-columns: 1fr; }
+}
