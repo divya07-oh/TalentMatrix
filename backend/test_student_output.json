@@ -1,0 +1,27 @@
+{
+  "validUserResponse": {
+    "status": 200,
+    "body": {
+      "userInfo": {
+        "name": "Alex",
+        "email": "alex@mit.edu"
+      },
+      "skills": {
+        "totalSkills": 2,
+        "approvedSkills": 1,
+        "pendingSkills": 1
+      },
+      "collaborations": {
+        "totalSent": 0,
+        "totalReceived": 0,
+        "acceptedCollaborations": 0
+      }
+    }
+  },
+  "invalidUserResponse": {
+    "status": 404,
+    "body": {
+      "message": "User not found."
+    }
+  }
+}
