@@ -1,97 +1,239 @@
-import React from 'react';
-import AppLayout from '../layouts/AppLayout';
-import { Users, Plus, MessageSquare, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Users, 
+  Send, 
+  Inbox, 
+  Clock, 
+  CheckCircle2, 
+  XCircle, 
+  MessageSquare,
+  User,
+  ShieldCheck,
+  ChevronRight
+} from 'lucide-react';
 
 const Collaboration = () => {
-    return (
-        <AppLayout title="Collaboration Hub" role="admin">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-32">
-                <div className="lg:col-span-2 space-y-32">
-                    {/* Active Projects */}
-                    <section>
-                        <div className="flex justify-between items-center mb-24">
-                            <h2 className="text-20 font-bold">Active Collaboration Projects</h2>
-                            <button className="btn-gold-solid py-8 flex items-center gap-8"><Plus size={18} /> Create Project</button>
-                        </div>
+  const [activeTab, setActiveTab] = useState('received'); // 'sent' or 'received'
+  const [requests, setRequests] = useState({ sent: [], received: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
 
-                        <div className="space-y-16">
-                            {[
-                                { title: 'Global Talent Index v2', lead: 'Dr. Emily Watson', members: 8, activity: 'High' },
-                                { title: 'AI Ethics Review Board', lead: 'Marcus Lee', members: 4, activity: 'Moderate' },
-                                { title: 'Blockchain Research Lab', lead: 'Sarah Jenkins', members: 12, activity: 'High' },
-                            ].map((proj, i) => (
-                                <div key={i} className="premium-card group cursor-pointer">
-                                    <div className="flex justify-between items-start mb-24">
-                                        <div>
-                                            <h3 className="text-18 font-bold text-darkheading group-hover:text-primary transition-colors">{proj.title}</h3>
-                                            <p className="text-14 text-bodytext">Project Lead: <span className="font-semibold">{proj.lead}</span></p>
-                                        </div>
-                                        <div className="flex -space-x-12">
-                                            {[1, 2, 3, 4].map(s => (
-                                                <div key={s} className="w-32 h-32 rounded-full border-2 border-white bg-gray-200"></div>
-                                            ))}
-                                            <div className="w-32 h-32 rounded-full border-2 border-white bg-primary text-white flex items-center justify-center text-10 font-bold">+{proj.members - 4}</div>
-                                        </div>
-                                    </div>
+  // Mock Current User (Alex)
+  const CURRENT_USER_ID = "s-1712156828551";
 
-                                    <div className="grid grid-cols-2 gap-24 pt-24 border-t border-gray-50">
-                                        <div className="flex items-center gap-12">
-                                            <div className="p-8 bg-green-50 text-green-600 rounded-lg"><Activity size={16} /></div>
-                                            <div>
-                                                <p className="text-10 uppercase tracking-widest font-bold text-gray-400">Activity Level</p>
-                                                <p className="text-14 font-bold">{proj.activity}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-12">
-                                            <div className="p-8 bg-primary/5 text-primary rounded-lg"><MessageSquare size={16} /></div>
-                                            <div>
-                                                <p className="text-10 uppercase tracking-widest font-bold text-gray-400">New Discussions</p>
-                                                <p className="text-14 font-bold">12 Active</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+  const fetchRequests = async () => {
+    setLoading(true);
+    console.log(`Calling API: GET /api/collaboration/user/${CURRENT_USER_ID}`);
+    setTimeout(() => {
+      const mockData = {
+        sent: [
+          { id: 101, status: 'pending', createdAt: '2026-04-01T10:00:00Z', message: 'Hi there!' }
+        ],
+        received: [
+          { id: 102, status: 'pending', createdAt: '2026-04-02T10:00:00Z', message: 'Wanna collab?' }
+        ]
+      };
+      console.log("Response:", { success: true, data: mockData });
+      setRequests(mockData);
+      setLoading(false);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleResponse = async (requestId, status) => {
+    setActionLoading(requestId);
+    console.log(`Calling API: PUT /api/collaboration/respond/${requestId}`);
+    console.log("Payload:", { status });
+    
+    setTimeout(() => {
+      console.log("Response:", { success: true, message: `Status updated to ${status}` });
+      setRequests(prev => ({
+        ...prev,
+        received: prev.received.map(req => 
+          req.id === requestId ? { ...req, status } : req
+        )
+      }));
+      setActionLoading(null);
+    }, 800);
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'accepted': return 'bg-accent/10 text-accent border-green-200';
+      case 'rejected': return 'bg-red-500/10 text-red-600 border-red-200';
+      default: return 'bg-amber-500/10 text-amber-600 border-amber-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'accepted': return <CheckCircle2 size={12} />;
+      case 'rejected': return <XCircle size={12} />;
+      default: return <Clock size={12} />;
+    }
+  };
+
+  const currentData = activeTab === 'sent' ? requests.sent : requests.received;
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-12 pb-20">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-8">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 text-accent">
+            <Users size={18} />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Connection</span>
+          </div>
+          <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Collaboration</h1>
+        </div>
+        <p className="text-[10px] font-bold text-text/40 uppercase tracking-[0.2em] max-w-xs md:text-right leading-relaxed">
+          Manage your project invitations and connections with other students.
+        </p>
+      </div>
+
+      {/* Tabs Control */}
+      <div className="flex border-b border-border p-1 bg-background mb-8">
+        <button 
+          onClick={() => setActiveTab('received')}
+          className={`flex-1 flex items-center justify-center gap-3 py-6 text-xs font-black uppercase tracking-[0.3em] transition-all duration-500 relative group overflow-hidden ${
+            activeTab === 'received' ? 'text-white' : 'text-text/30 hover:text-text/60'
+          }`}
+        >
+          <div className="relative z-10 flex items-center gap-3">
+            <Inbox size={16} className={activeTab === 'received' ? 'text-accent' : ''} />
+            Received
+            {requests?.received && requests.received.filter(r => r.status === 'pending').length > 0 && (
+                <span className="w-5 h-5 bg-accent text-white text-[8px] flex items-center justify-center rounded-full">
+                    {requests.received.filter(r => r.status === 'pending').length}
+                </span>
+            )}
+          </div>
+          {activeTab === 'received' && (
+            <motion.div layoutId="tab-bg" className="absolute bottom-0 left-0 w-full h-[3px] bg-accent" />
+          )}
+        </button>
+        <button 
+          onClick={() => setActiveTab('sent')}
+          className={`flex-1 flex items-center justify-center gap-3 py-6 text-xs font-black uppercase tracking-[0.3em] transition-all duration-500 relative group overflow-hidden ${
+            activeTab === 'sent' ? 'text-white' : 'text-text/30 hover:text-text/60'
+          }`}
+        >
+          <div className="relative z-10 flex items-center gap-3">
+            <Send size={16} className={activeTab === 'sent' ? 'text-accent' : ''} />
+            Sent
+          </div>
+          {activeTab === 'sent' && (
+            <motion.div layoutId="tab-bg" className="absolute bottom-0 left-0 w-full h-[3px] bg-accent" />
+          )}
+        </button>
+      </div>
+
+      {/* Content Area */}
+      <div className="space-y-6">
+        {loading ? (
+            <div className="py-32 flex flex-col items-center justify-center space-y-6">
+                <div className="w-12 h-12 border-[4px] border-background border-t-accent animate-spin rounded-sm"></div>
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white animate-pulse">Working...</span>
+            </div>
+        ) : error ? (
+            <div className="py-20 arch-card border-red-100 bg-red-50/20 text-center space-y-4">
+                <XCircle size={32} className="mx-auto text-red-300" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-900">{error}</p>
+            </div>
+        ) : !currentData || currentData.length === 0 ? (
+            <div className="py-32 arch-card border-dashed border-border flex flex-col items-center justify-center space-y-6 opacity-40 bg-primary/50">
+                <div className="w-16 h-16 border border-border flex items-center justify-center bg-primary rotate-45">
+                    <MessageSquare size={24} className="-rotate-45 text-white/20" />
                 </div>
-
-                <div className="space-y-32">
-                    {/* Recent Communications */}
-                    <div className="premium-card">
-                        <h2 className="text-18 font-bold mb-24">Direct Communications</h2>
-                        <div className="space-y-24">
-                            {[1, 2, 3, 4].map(i => (
-                                <div key={i} className="flex items-center gap-16 cursor-pointer hover:bg-lightbg/50 p-8 rounded-xl transition-all">
-                                    <div className="relative">
-                                        <div className="w-48 h-48 bg-primary/10 rounded-full flex items-center justify-center font-bold text-primary">JD</div>
-                                        <div className="absolute bottom-0 right-0 w-12 h-12 bg-green-500 rounded-full border-2 border-white"></div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-14 font-bold">James Dover</p>
-                                        <p className="text-12 text-bodytext truncate">Reviewing the latest dataset...</p>
-                                    </div>
-                                    <span className="text-10 font-bold text-gray-400">2m</span>
-                                </div>
-                            ))}
-                        </div>
-                        <button className="w-full mt-24 py-12 border-2 border-gray-100 rounded-xl text-14 font-bold text-bodytext hover:bg-lightbg transition-all">View All Conversations</button>
-                    </div>
-
-                    <div className="premium-card bg-primary text-white border-none overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-16 rotate-12 opacity-20">
-                            <Users size={120} />
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="text-18 font-bold mb-16 underline decoration-accent underline-offset-8">Institutional Meetup</h3>
-                            <p className="text-14 text-white/70 mb-24">Every Friday at 4:30 PM in the Digital Excellence Hub.</p>
-                            <button className="btn-gold-solid w-full border-none">RSVP Now</button>
-                        </div>
-                    </div>
+                <div className="text-center space-y-2">
+                    <p className="text-xs font-black uppercase tracking-[0.4em] text-white">No requests found</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-text/40">Search for students to start collaborating.</p>
                 </div>
             </div>
-        </AppLayout>
-    );
+        ) : (
+            <div className="grid grid-cols-1 gap-4">
+                <AnimatePresence mode="popLayout">
+                    {currentData.map((req, idx) => (
+                        <motion.div 
+                            key={req.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: idx * 0.05 }}
+                            className="arch-card p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-accent/40 transition-all duration-300 group shadow-sm hover:shadow-xl"
+                        >
+                            <div className="flex items-center gap-6 w-full md:w-auto">
+                                <div className="w-14 h-14 border border-border bg-background flex items-center justify-center font-black text-white group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all duration-500 relative">
+                                    <User size={20} />
+                                    {req.isAdminInvite && (
+                                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-accent flex items-center justify-center border border-accent/20">
+                                            <ShieldCheck size={12} />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-lg font-black text-white uppercase tracking-tighter">
+                                            Student
+                                        </h3>
+                                        {req.isAdminInvite && (
+                                            <span className="text-[8px] font-black bg-primary text-accent px-2 py-0.5 uppercase tracking-widest">Approved</span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 border flex items-center gap-2 ${getStatusStyle(req.status)}`}>
+                                            {getStatusIcon(req.status)}
+                                            {req.status}
+                                        </span>
+                                        <span className="text-[9px] font-bold text-text/30 uppercase tracking-widest flex items-center gap-1">
+                                            <Clock size={10} /> {new Date(req.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 w-full md:max-w-md bg-background/50 border border-border/50 p-4 relative">
+                                <p className="text-[11px] font-medium text-text/70 leading-relaxed italic">
+                                    "{req.message || 'No message attached.'}"
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                {activeTab === 'received' && req.status === 'pending' ? (
+                                    <>
+                                        <button 
+                                            disabled={actionLoading === req.id}
+                                            onClick={() => handleResponse(req.id, 'accepted')}
+                                            className="flex-1 md:flex-none bg-primary text-white px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent hover:text-white transition-all duration-300 disabled:opacity-50"
+                                        >
+                                            {actionLoading === req.id ? '...' : 'Approve'}
+                                        </button>
+                                        <button 
+                                            disabled={actionLoading === req.id}
+                                            onClick={() => handleResponse(req.id, 'rejected')}
+                                            className="flex-1 md:flex-none border border-border text-white px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all duration-300 disabled:opacity-50"
+                                        >
+                                            Decline
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 flex items-center gap-2">
+                                        Completed <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-10px] group-hover:translate-x-0" />
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Collaboration;
