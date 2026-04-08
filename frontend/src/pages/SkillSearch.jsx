@@ -10,6 +10,9 @@ import {
   Filter
 } from 'lucide-react';
 
+import API from '../api';
+import { getUser } from '../utils/getUser';
+
 const SkillSearch = () => {
   const [skillQuery, setSkillQuery] = useState('');
   const [collegeQuery, setCollegeQuery] = useState('');
@@ -17,25 +20,26 @@ const SkillSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searched, setSearched] = useState(false);
+  const user = getUser();
 
   const fetchResults = async () => {
-    if (!skillQuery.trim()) return;
+    const query = skillQuery?.trim();
+    const college = collegeQuery?.trim();
+    if (!query) return;
     
     setLoading(true);
     setError(null);
     setSearched(true);
     
-    console.log(`Calling API: GET /api/search/skills?skill=${encodeURIComponent(skillQuery)}&college=${encodeURIComponent(collegeQuery)}`);
-    
-    setTimeout(() => {
-      const mockResults = [
-        { id: 1, name: 'Alex Johnson', email: 'alex@mit.edu', collegeId: collegeQuery || 'MIT', skills: [{ id: 10, skillName: skillQuery.toUpperCase() }, { id: 11, skillName: 'NODE.JS' }] },
-        { id: 2, name: 'Sarah Chen', email: 'schen@stanford.edu', collegeId: collegeQuery || 'STANFORD', skills: [{ id: 12, skillName: skillQuery.toUpperCase() }] }
-      ];
-      console.log("Response:", { success: true, count: mockResults.length, data: mockResults });
-      setResults(mockResults);
+    try {
+      const response = await API.get(`/search/skills?skill=${encodeURIComponent(query)}&collegeId=${encodeURIComponent(college)}`);
+      setResults(response.data.data || []);
+    } catch (err) {
+      console.error("Search Error:", err);
+      setError(err.response?.data?.message || "Communication failure with Matrix hub.");
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   const handleSearch = (e) => {
@@ -43,14 +47,24 @@ const SkillSearch = () => {
     fetchResults();
   };
 
-  const handleSendRequest = (name) => {
-    console.log("Calling API: POST /api/collaboration/send");
-    console.log("Payload:", { targetUser: name, message: `Requesting collaboration for ${skillQuery}` });
-    
-    setTimeout(() => {
-        console.log("Response:", { success: true, message: `Request successfully sent to ${name}` });
-        alert(`Signal Sent to ${name}. Monitoring for verification...`);
-    }, 500);
+  const handleSendRequest = async (receiverId, name) => {
+    if (!user || !user._id) {
+      alert("Unauthorized session. Please login.");
+      return;
+    }
+
+    try {
+      await API.post('/collaboration/send', {
+        senderId: user._id,
+        receiverId: receiverId,
+        skill: skillQuery,
+        message: `Requesting collaboration for ${skillQuery}`
+      });
+      alert(`Signal Sent to ${name}. Monitoring for verification...`);
+    } catch (err) {
+      console.error("Collaboration Request Error:", err);
+      alert(err.response?.data?.message || `Failed to send signal to ${name}.`);
+    }
   };
 
   return (
@@ -183,7 +197,7 @@ const SkillSearch = () => {
                                 </div>
 
                                 <button 
-                                    onClick={() => handleSendRequest(student.name)}
+                                    onClick={() => handleSendRequest(student.id, student.name)}
                                     className="btn-primary mt-12 w-full p-5 text-[10px] tracking-[0.4em] flex gap-3 group"
                                 >
                                     <Send size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" /> Send Request

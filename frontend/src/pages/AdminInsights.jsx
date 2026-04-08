@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Layers, 
-  Activity, 
+  Activity as ActivityIcon, 
   Users, 
   PlusCircle, 
   Zap,
@@ -12,36 +12,45 @@ import {
   Shield,
   ChevronRight
 } from 'lucide-react';
+import API from '../api';
 
 const AdminInsights = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInsights = async () => {
+    try {
+      setLoading(true);
+      const response = await API.get('/admin/insights');
+      setData(response.data);
+    } catch (err) {
+      console.error("Fetch Insights Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    console.log("Calling API: GET /api/admin/insights");
-    setTimeout(() => {
-      console.log("Response:", { success: true, data: "insights telemetry fetched" });
-    }, 500);
+    fetchInsights();
   }, []);
 
-  const topSkills = [
-    { name: 'React Architecture', frequency: 1240, percentage: 85, trend: '+22%' },
-    { name: 'Vite Engineering', frequency: 892, percentage: 70, trend: '+15%' },
-    { name: 'Tailwind Mastery', frequency: 654, percentage: 55, trend: '+10%' },
-    { name: 'Node.js Systems', frequency: 421, percentage: 40, trend: '+5%' },
-    { name: 'TypeScript Integration', frequency: 310, percentage: 32, trend: '+18%' },
-  ];
+  const topSkills = data?.topSkills?.map(s => ({
+    name: s._id,
+    frequency: s.count,
+    percentage: Math.min(100, (s.count / (data.totalSkills || 1)) * 500), // Adjusted for visualization
+    trend: '+10%'
+  })) || [];
 
-  const activeStudents = [
-    { name: 'Alex Rivera', skills: 14, verifications: 12, activity: 'High' },
-    { name: 'Sarah Chen', skills: 11, verifications: 9, activity: 'Moderate' },
-    { name: 'Marco Rossi', skills: 9, verifications: 8, activity: 'Moderate' },
-    { name: 'Deepa Jain', skills: 8, verifications: 8, activity: 'Active' },
-    { name: 'Sam Turner', skills: 7, verifications: 6, activity: 'Active' },
-  ];
+  const activeStudents = data?.studentsLeadership?.map(s => ({
+    name: s.name,
+    skills: s.skillCount,
+    verifications: s.skillCount, // Simplified for now
+    activity: s.skillCount > 10 ? 'High' : 'Active'
+  })) || [];
 
   const activitySummary = [
-    { id: 1, type: 'Verification', detail: 's-102 skill verified by Admin.', time: '2m ago' },
-    { id: 2, type: 'Collaboration', detail: 'Project signal s-901 active.', time: '14m ago' },
-    { id: 3, type: 'System', detail: 'Campus Node Sync completed.', time: '1h ago' },
-    { id: 4, type: 'Registration', detail: 'New Node Join [s-4402].', time: '3h ago' },
+    { id: 1, type: 'Verification', detail: 'Latest skills telemetry synced.', time: 'Just now' },
+    { id: 2, type: 'System', detail: 'Matrix Core health check passed.', time: '1h ago' },
   ];
 
   return (
@@ -50,7 +59,7 @@ const AdminInsights = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-8">
         <div className="space-y-2">
           <div className="flex items-center gap-3 text-accent transition-transform duration-500 hover:scale-105">
-            <Activity size={18} />
+            <ActivityIcon size={18} />
             <span className="text-[10px] font-black uppercase tracking-[0.4em]">Overview</span>
           </div>
           <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic">Insights</h1>
@@ -182,7 +191,7 @@ const AdminInsights = () => {
             {/* Global Activity feed look */}
             <div className="space-y-8">
                <div className="flex items-center gap-3 border-b border-border pb-4">
-                  <Activity size={18} className="text-white" />
+                  <ActivityIcon size={18} className="text-white" />
                   <h3 className="text-sm font-black uppercase tracking-[0.3em] text-white">Platform Activity Summary</h3>
                </div>
                <div className="ring-1 ring-border p-10 arch-card relative overflow-hidden shadow-2xl">

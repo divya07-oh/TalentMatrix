@@ -4,7 +4,7 @@ import {
   Layers, 
   Plus, 
   Users, 
-  Activity, 
+  Activity as ActivityIcon, 
   CheckCircle2, 
   Clock, 
   ArrowRight,
@@ -15,47 +15,77 @@ import {
   X
 } from 'lucide-react';
 
+import API from '../api';
+import { getUser } from '../utils/getUser';
+
 const ProjectWorkspace = () => {
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
+
+  const fetchProjects = async () => {
+    if (!user || !user._id) return;
+    setLoading(true);
+    try {
+      const response = await API.get(`/projects/user/${user._id}`);
+      setProjects(response.data.projects.map(p => ({
+        id: p._id,
+        name: p.name,
+        members: p.members,
+        progress: p.progress,
+        status: p.status,
+        createdAt: new Date(p.createdAt).toISOString().split('T')[0]
+      })));
+    } catch (err) {
+      console.error("Fetch Projects Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    console.log("Calling API: GET /api/projects/user/123");
-    setTimeout(() => {
-      const mockProjects = [
-        { id: 1, name: "TalentMatrix Frontend Refactor", members: ["Alex", "Sam"], progress: 45, status: "active", createdAt: "2024-03-20" },
-        { id: 2, name: "Matrix Core optimization", members: ["Jordan", "Taylor"], progress: 82, status: "active", createdAt: "2024-03-15" },
-        { id: 3, name: "Universal Auth Signal", members: ["Casey"], progress: 100, status: "completed", createdAt: "2024-03-10" },
-      ];
-      console.log("Response:", { success: true, count: 3, data: mockProjects });
-      setProjects(mockProjects);
-    }, 1000);
-  }, []);
+    fetchProjects();
+  }, [user?._id]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProject, setNewProject] = useState({ name: '', members: '' });
+  const [creating, setCreating] = useState(false);
 
-  const handleCreateProject = (e) => {
+  const handleCreateProject = async (e) => {
     e.preventDefault();
-    if (!newProject.name) return;
+    if (!newProject.name || !user) return;
     
-    console.log("Calling API: POST /api/projects/create");
-    console.log("Payload:", { name: newProject.name, members: newProject.members.split(',').map(m => m.trim()).filter(m => m) });
-    
-    setTimeout(() => {
-      const project = {
-        id: Date.now(),
+    setCreating(true);
+    try {
+      const payload = {
+        userId: user._id,
         name: newProject.name,
-        members: newProject.members.split(',').map(m => m.trim()).filter(m => m),
-        progress: 0,
-        status: 'active',
-        createdAt: new Date().toISOString().split('T')[0]
+        members: newProject.members.split(',').map(m => m.trim()).filter(m => m)
       };
-      console.log("Response:", { success: true, message: "Project created", data: project });
+      
+      const response = await API.post('/projects/create', payload);
+      const p = response.data.project;
+      const project = {
+        id: p._id,
+        name: p.name,
+        members: p.members,
+        progress: p.progress,
+        status: p.status,
+        createdAt: new Date(p.createdAt).toISOString().split('T')[0]
+      };
+      
       setProjects([project, ...projects]);
       setNewProject({ name: '', members: '' });
       setIsModalOpen(false);
-    }, 800);
+    } catch (err) {
+      console.error("Project Creation Error:", err);
+      alert("Failed to create project.");
+    } finally {
+      setCreating(false);
+    }
   };
+
+  const [savingProgress, setSavingProgress] = useState(null);
 
   const updateProgress = (id, newProgress) => {
     const val = Math.max(0, Math.min(100, parseInt(newProgress) || 0));
@@ -64,13 +94,19 @@ const ProjectWorkspace = () => {
     ));
   };
 
-  const saveProgress = (id, progress) => {
-    console.log(`Calling API: PUT /api/projects/progress/${id}`);
-    console.log("Payload:", { progress });
-    setTimeout(() => {
-        console.log("Response:", { success: true, message: "Progress updated successfully" });
-    }, 500);
+  const handleSaveProgress = async (id, progress) => {
+    setSavingProgress(id);
+    try {
+      await API.put(`/projects/progress/${id}`, { progress });
+      // Reload projects to sync status if needed, or just update local state
+    } catch (err) {
+      console.error("Save Progress Error:", err);
+      alert("Failed to sync progress.");
+    } finally {
+      setSavingProgress(null);
+    }
   };
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 pb-20 p-8">
@@ -98,7 +134,7 @@ const ProjectWorkspace = () => {
       {/* Analytics Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Active Projects', value: projects.filter(p => p.status === 'active').length, icon: <Activity className="text-accent" /> },
+          { label: 'Active Projects', value: projects.filter(p => p.status === 'active').length, icon: <ActivityIcon className="text-accent" /> },
           { label: 'Completed', value: projects.filter(p => p.status === 'completed').length, icon: <CheckCircle2 className="text-green-500" /> },
           { label: 'Success Rate', value: '88%', icon: <TrendingUp className="text-blue-500" /> },
         ].map((stat, i) => (
@@ -160,7 +196,6 @@ const ProjectWorkspace = () => {
                         type="number" 
                         value={project.progress}
                         onChange={(e) => updateProgress(project.id, e.target.value)}
-                        onBlur={() => saveProgress(project.id, project.progress)}
                         className="w-12 bg-background border border-border p-1 text-[10px] font-black text-center focus:outline-none focus:border-accent"
                       />
                       <span className="text-[10px] font-black uppercase text-white tracking-widest">%</span>
@@ -171,11 +206,16 @@ const ProjectWorkspace = () => {
                       initial={{ width: 0 }}
                       animate={{ width: `${project.progress}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
-                      className={`h-full transition-colors duration-500 ${
-                        project.progress === 100 ? 'bg-accent' : 'bg-accent'
-                      }`}
+                      className="h-full bg-accent transition-colors duration-500"
                     />
                   </div>
+                  <button 
+                    onClick={() => handleSaveProgress(project.id, project.progress)}
+                    disabled={savingProgress === project.id}
+                    className="w-full py-2 bg-primary/10 border border-border text-[9px] font-black uppercase tracking-[0.3em] text-accent hover:bg-accent hover:text-white transition-all duration-300 disabled:opacity-50 mt-2"
+                  >
+                    {savingProgress === project.id ? 'Saving...' : 'Save Progress'}
+                  </button>
                 </div>
               </div>
 

@@ -46,6 +46,7 @@ function App() {
           <Route path="students" element={<div className="p-8 text-white font-black uppercase tracking-[0.4em]">Student Population Control</div>} />
           <Route path="search" element={<AdminSkillSearch />} />
           <Route path="verification" element={<SkillVerification />} />
+          <Route path="collaboration" element={<Collaboration />} />
           <Route path="analytics" element={<AdminInsights />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="notifications" element={<AdminNotifications />} />

@@ -15,20 +15,37 @@ import {
   Phone
 } from 'lucide-react';
 
+import API from '../api';
+import { getUser } from '../utils/getUser';
+
 const StudentProfile = () => {
   const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
 
   useEffect(() => {
-    console.log("Calling API: GET /api/skills/user/123");
-    setTimeout(() => {
-      const dbSkills = [
-        { id: 1, name: 'React Development', repo: 'github.com/alex/react-app', status: 'approved', date: '2026-03-15' },
-        { id: 2, name: 'Tailwind CSS Mastery', repo: 'github.com/alex/portfolio', status: 'pending', date: '2026-04-01' }
-      ];
-      console.log("Response:", { success: true, count: 2, data: dbSkills });
-      setSkills(dbSkills);
-    }, 1000);
-  }, []);
+    if (!user || !user._id) return;
+
+    const fetchSkills = async () => {
+      try {
+        setLoading(true);
+        const response = await API.get(`/skills/user/${user._id}`);
+        setSkills(response.data.skills.map(s => ({
+          id: s._id,
+          name: s.skillName,
+          repo: s.githubLink,
+          status: s.status,
+          date: new Date(s.createdAt).toISOString().split('T')[0]
+        })));
+      } catch (error) {
+        console.error("Fetch Skills Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSkills();
+  }, [user?._id]);
 
   const [newSkill, setNewSkill] = useState({ name: '', repo: '', file: null });
   const [submitting, setSubmitting] = useState(false);
@@ -45,33 +62,40 @@ const StudentProfile = () => {
     setNewSkill({ ...newSkill, file: e.target.files[0] });
   };
 
-  const handleAddSkill = (e) => {
+  const handleAddSkill = async (e) => {
     e.preventDefault();
-    if (!newSkill.name || !newSkill.repo) return;
+    if (!newSkill.name || !newSkill.repo || !newSkill.file || !user) return;
     
     setSubmitting(true);
-    console.log("Calling API: POST /api/skills/add");
-    console.log("Payload (FormData):", { 
-       name: newSkill.name, 
-       repo: newSkill.repo, 
-       certificate: newSkill.file ? newSkill.file.name : null,
-       userId: 123 
-    });
     
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+      formData.append('userId', user._id);
+      formData.append('skillName', newSkill.name);
+      formData.append('projectRepoLink', newSkill.repo);
+      formData.append('certificate', newSkill.file);
+
+      const response = await API.post('/skills/add', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const s = response.data.skill;
       const addedSkill = {
-        id: Date.now(),
-        name: newSkill.name,
-        repo: newSkill.repo,
-        status: 'pending',
-        date: new Date().toISOString().split('T')[0]
+        id: s._id,
+        name: s.skillName,
+        repo: s.githubLink,
+        status: s.status,
+        date: new Date(s.createdAt).toISOString().split('T')[0]
       };
-      console.log("Response:", { success: true, message: "Skill submitted for review", data: addedSkill });
       
       setSkills([...skills, addedSkill]);
       setNewSkill({ name: '', repo: '', file: null });
+    } catch (error) {
+      console.error("Add Skill Error:", error);
+      alert(error.response?.data?.message || "Failed to add skill.");
+    } finally {
       setSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -84,8 +108,8 @@ const StudentProfile = () => {
       >
         <div className="lg:col-span-1 flex flex-col items-center lg:items-start space-y-6">
           <div className="w-32 h-32 border-4 border-primary p-2 bg-background ring-4 ring-accent/10 flex items-center justify-center relative overflow-hidden group cursor-pointer">
-            {profileImg ? (
-               <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+            {profileImg || user?.profileImage ? (
+               <img src={profileImg || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
             ) : (
                <UserCircle size={64} className="text-white" />
             )}
@@ -95,8 +119,8 @@ const StudentProfile = () => {
             </div>
           </div>
           <div className="text-center lg:text-left space-y-1">
-            <h1 className="text-2xl font-black text-white uppercase tracking-tighter">Alex Johnson</h1>
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">Student</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-tighter">{user?.name || 'User Name'}</h1>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">{user?.role || 'Student'}</p>
           </div>
         </div>
 
@@ -107,37 +131,35 @@ const StudentProfile = () => {
                    <Layers size={14} />
                    <span className="text-[10px] font-black uppercase tracking-widest">College</span>
                 </div>
-                <p className="text-sm font-bold text-white uppercase tracking-wider">MIT Engineering</p>
+                <p className="text-sm font-bold text-white uppercase tracking-wider">{user?.collegeId || 'Not Specified'}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-white/40">
                    <MapPin size={14} />
                    <span className="text-[10px] font-black uppercase tracking-widest">Department</span>
                 </div>
-                <p className="text-sm font-bold text-white uppercase tracking-wider">Computer Science</p>
+                <p className="text-sm font-bold text-white uppercase tracking-wider">{user?.department || 'General'}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-white/40">
                    <Mail size={14} />
-                   <span className="text-[10px] font-black uppercase tracking-widest">Official College Email</span>
+                   <span className="text-[10px] font-black uppercase tracking-widest">Official Email</span>
                 </div>
                 <input 
                   type="email" 
-                  defaultValue="alex@mit.edu"
-                  placeholder="ADD OFFICIAL EMAIL"
-                  className="w-full bg-background border border-border/80 p-3 text-sm font-bold text-white uppercase tracking-wider focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all rounded-md shadow-sm"
+                  disabled
+                  value={user?.email || ''}
+                  className="w-full bg-background/50 border border-border/80 p-3 text-sm font-bold text-white uppercase tracking-wider cursor-not-allowed rounded-md shadow-sm"
                 />
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-white/40">
                    <Phone size={14} />
-                   <span className="text-[10px] font-black uppercase tracking-widest">Contact Number (Optional)</span>
+                   <span className="text-[10px] font-black uppercase tracking-widest">Registration Status</span>
                 </div>
-                <input 
-                  type="text" 
-                  placeholder="ADD CONTACT NUMBER"
-                  className="w-full bg-background border border-border/80 p-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all rounded-md shadow-sm"
-                />
+                <div className="p-3 bg-background/30 border border-border/80 text-[10px] font-black uppercase tracking-[0.2em] text-accent">
+                   Active Node Verified
+                </div>
               </div>
            </div>
 

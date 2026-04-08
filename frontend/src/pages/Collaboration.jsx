@@ -1,65 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, 
-  Send, 
-  Inbox, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  MessageSquare,
-  User,
-  ShieldCheck,
-  ChevronRight
+  Activity as ActivityIcon, Users, Send, Inbox, Clock, CheckCircle2, XCircle, MessageSquare, User, ShieldCheck, ChevronRight 
 } from 'lucide-react';
 
+import API from '../api';
+import { getUser } from '../utils/getUser';
+
 const Collaboration = () => {
-  const [activeTab, setActiveTab] = useState('received'); // 'sent' or 'received'
-  const [requests, setRequests] = useState({ sent: [], received: [] });
+  const user = getUser();
+  const isAdmin = user?.role === 'admin';
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'all' : 'received'); // 'sent', 'received', or 'all'
+  const [requests, setRequests] = useState({ sent: [], received: [], all: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
 
-  // Mock Current User (Alex)
-  const CURRENT_USER_ID = "s-1712156828551";
-
   const fetchRequests = async () => {
+    if (!user || !user._id) return;
+    
     setLoading(true);
-    console.log(`Calling API: GET /api/collaboration/user/${CURRENT_USER_ID}`);
-    setTimeout(() => {
-      const mockData = {
-        sent: [
-          { id: 101, status: 'pending', createdAt: '2026-04-01T10:00:00Z', message: 'Hi there!' }
-        ],
-        received: [
-          { id: 102, status: 'pending', createdAt: '2026-04-02T10:00:00Z', message: 'Wanna collab?' }
-        ]
-      };
-      console.log("Response:", { success: true, data: mockData });
-      setRequests(mockData);
+    try {
+      const response = await API.get(`/collaboration/user/${user._id}`);
+      const data = response.data.data;
+
+      setRequests({
+        sent: (data.sent || []).map(r => ({
+          id: r._id,
+          status: r.status,
+          createdAt: r.createdAt,
+          message: r.message,
+          name: r.receiverId?.name || 'Unknown',
+          skill: r.skill
+        })),
+        received: (data.received || []).map(r => ({
+          id: r._id,
+          status: r.status,
+          createdAt: r.createdAt,
+          message: r.message,
+          name: r.senderId?.name || 'Unknown',
+          skill: r.skill
+        })),
+        all: (data.all || []).map(r => ({
+          id: r._id,
+          status: r.status,
+          createdAt: r.createdAt,
+          message: r.message,
+          senderName: r.senderId?.name || 'Unknown',
+          receiverName: r.receiverId?.name || 'Unknown',
+          skill: r.skill
+        }))
+      });
+    } catch (err) {
+      console.error("Fetch Collaboration Error:", err);
+      setError("Failed to retrieve connection nodes.");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+  }, [user?._id]);
 
   const handleResponse = async (requestId, status) => {
     setActionLoading(requestId);
-    console.log(`Calling API: PUT /api/collaboration/respond/${requestId}`);
-    console.log("Payload:", { status });
-    
-    setTimeout(() => {
-      console.log("Response:", { success: true, message: `Status updated to ${status}` });
+    try {
+      await API.put(`/collaboration/respond/${requestId}`, { status });
       setRequests(prev => ({
         ...prev,
         received: prev.received.map(req => 
           req.id === requestId ? { ...req, status } : req
         )
       }));
+    } catch (err) {
+      console.error("Collaboration Response Error:", err);
+      alert("Failed to update status.");
+    } finally {
       setActionLoading(null);
-    }, 800);
+    }
   };
 
   const getStatusStyle = (status) => {
@@ -78,7 +97,7 @@ const Collaboration = () => {
     }
   };
 
-  const currentData = activeTab === 'sent' ? requests.sent : requests.received;
+  const currentData = activeTab === 'all' ? requests.all : (activeTab === 'sent' ? requests.sent : requests.received);
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-20">
@@ -98,6 +117,22 @@ const Collaboration = () => {
 
       {/* Tabs Control */}
       <div className="flex border-b border-border p-1 bg-background mb-8">
+        {isAdmin && (
+           <button 
+           onClick={() => setActiveTab('all')}
+           className={`flex-1 flex items-center justify-center gap-3 py-6 text-xs font-black uppercase tracking-[0.3em] transition-all duration-500 relative group overflow-hidden ${
+             activeTab === 'all' ? 'text-white' : 'text-text/30 hover:text-text/60'
+           }`}
+         >
+           <div className="relative z-10 flex items-center gap-3">
+             <ActivityIcon size={16} className={activeTab === 'all' ? 'text-accent' : ''} />
+             Global Matrix
+           </div>
+           {activeTab === 'all' && (
+             <motion.div layoutId="tab-bg" className="absolute bottom-0 left-0 w-full h-[3px] bg-accent" />
+           )}
+         </button>
+        )}
         <button 
           onClick={() => setActiveTab('received')}
           className={`flex-1 flex items-center justify-center gap-3 py-6 text-xs font-black uppercase tracking-[0.3em] transition-all duration-500 relative group overflow-hidden ${
@@ -169,7 +204,7 @@ const Collaboration = () => {
                             <div className="flex items-center gap-6 w-full md:w-auto">
                                 <div className="w-14 h-14 border border-border bg-background flex items-center justify-center font-black text-white group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all duration-500 relative">
                                     <User size={20} />
-                                    {req.isAdminInvite && (
+                                    {isAdmin && (
                                         <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-accent flex items-center justify-center border border-accent/20">
                                             <ShieldCheck size={12} />
                                         </div>
@@ -178,10 +213,14 @@ const Collaboration = () => {
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-3">
                                         <h3 className="text-lg font-black text-white uppercase tracking-tighter">
-                                            Student
+                                            {activeTab === 'all' ? (
+                                                <span>{req.senderName} → {req.receiverName}</span>
+                                            ) : (
+                                                <span>{req.name}</span>
+                                            )}
                                         </h3>
-                                        {req.isAdminInvite && (
-                                            <span className="text-[8px] font-black bg-primary text-accent px-2 py-0.5 uppercase tracking-widest">Approved</span>
+                                        {isAdmin && activeTab === 'all' && (
+                                            <span className="text-[8px] font-black bg-primary text-accent px-2 py-0.5 uppercase tracking-widest whitespace-nowrap">Platform Wide</span>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-4">
@@ -192,6 +231,11 @@ const Collaboration = () => {
                                         <span className="text-[9px] font-bold text-text/30 uppercase tracking-widest flex items-center gap-1">
                                             <Clock size={10} /> {new Date(req.createdAt).toLocaleDateString()}
                                         </span>
+                                        {req.skill && (
+                                            <span className="text-[9px] font-black text-accent uppercase tracking-widest border border-accent/20 px-2 py-0.5">
+                                                {req.skill}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -222,7 +266,7 @@ const Collaboration = () => {
                                     </>
                                 ) : (
                                     <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 flex items-center gap-2">
-                                        Completed <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-10px] group-hover:translate-x-0" />
+                                        {activeTab === 'all' ? 'Monitored' : 'Completed'} <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-10px] group-hover:translate-x-0" />
                                     </div>
                                 )}
                             </div>

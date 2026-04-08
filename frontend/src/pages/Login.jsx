@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
+import API from '../api';
 
 const Login = () => {
   const [role, setRole] = useState('student');
@@ -10,26 +11,37 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
-    console.log("Calling API: POST /api/auth/login");
-    console.log("Payload:", { email, password, role });
+    const normalizedEmail = email.toLowerCase().trim();
     
-    // Simulate API delay
-    setTimeout(() => {
-      console.log("Response:", { success: true, message: "Login successful", token: "mock_jwt_token" });
-      setLoading(false);
-      if (role === 'student') {
+    try {
+      const response = await API.post('/auth/login', { email: normalizedEmail, password });
+      const { user } = response.data;
+      
+      // Map id to _id for consistency as per requirements
+      const normalizedUser = {
+        ...user,
+        _id: user.id || user._id
+      };
+      
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
+      
+      if (normalizedUser.role === 'student') {
         navigate('/student/dashboard');
-      } else if (role === 'admin') {
+      } else if (normalizedUser.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
-        alert(`${role.charAt(0).toUpperCase() + role.slice(1)} Login simulated.`);
+        setError('Unauthorized role');
       }
-    }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,20 +49,20 @@ const Login = () => {
       title="Login" 
       subtitle={`Sign in to your ${role} account`}
     >
-      {/* Role Toggle */}
-      <div className="flex w-full mb-10 border border-border/80 overflow-hidden rounded-md relative shadow-sm">
+      {/* Centered Role Toggle */}
+      <div className="flex w-full max-w-[280px] mx-auto mb-12 border border-border/80 overflow-hidden rounded-md relative shadow-sm">
         <button 
           onClick={() => setRole('student')}
-          className={`flex-1 py-4 text-xs font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
-            role === 'student' ? 'text-[#0F1F17]' : 'text-white hover:bg-background'
+          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
+            role === 'student' ? 'text-[#0F1F17]' : 'text-white/60 hover:text-white hover:bg-background'
           }`}
         >
           Student
         </button>
         <button 
           onClick={() => setRole('admin')}
-          className={`flex-1 py-4 text-xs font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
-            role === 'admin' ? 'text-[#0F1F17]' : 'text-white hover:bg-background'
+          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
+            role === 'admin' ? 'text-[#0F1F17]' : 'text-white/60 hover:text-white hover:bg-background'
           }`}
         >
           Admin
@@ -103,13 +115,6 @@ const Login = () => {
           className="btn btn-primary w-full font-black tracking-[0.4em] disabled:opacity-50"
         >
           {loading ? 'Logging In...' : 'Log In'}
-        </button>
-        
-        <button 
-          type="button"
-          className="btn btn-outline w-full font-black tracking-[0.4em] pb-[10px]"
-        >
-          Continue with GitHub
         </button>
       </form>
 

@@ -2,111 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 body {
-  @apply bg-gradient-to-br from-background to-[#0a140f] text-text font-sans antialiased min-h-screen bg-fixed;
-}
-
-/* Animated Kinetic Grid Pattern */
-@keyframes gridPan {
-  0% { background-position: 0px 0px; }
-  100% { background-position: 40px 40px; }
-}
-
-.grid-pattern {
-  background-size: 40px 40px;
+  @apply bg-background text-white font-sans antialiased min-h-screen relative;
   background-image: 
-    linear-gradient(to right, rgba(212,175,55,0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(212,175,55,0.08) 1px, transparent 1px);
-  animation: gridPan 4s linear infinite;
+    radial-gradient(circle at 50% -20%, #1B3022 0%, #0F1F17 80%),
+    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 25px 25px, 25px 25px;
+  background-attachment: scroll, fixed, fixed;
+}
+
+/* Dense Blueprint Grid Pattern */
+.grid-pattern {
+  background-size: 20px 20px;
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.07) 1px, transparent 1px);
 }
 
 .grid-pattern-subtle {
-  background-size: 20px 20px;
+  background-size: 10px 10px;
   background-image: 
-    linear-gradient(to right, rgba(212,175,55,0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(212,175,55,0.04) 1px, transparent 1px);
-  animation: gridPan 8s linear infinite;
+    linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
 }
 
-/* Kinetic Glow */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.15; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(1.1); }
-}
-
-.kinetic-glow {
-  @apply fixed rounded-full blur-[120px] pointer-events-none -z-10 mix-blend-screen;
-  animation: pulseGlow 8s ease-in-out infinite;
-  background: radial-gradient(circle, theme('colors.accent') 0%, theme('colors.primary') 40%, transparent 70%);
-}
-
-/* Custom Utilities */
-.text-stroke-accent {
-  -webkit-text-stroke: 1px theme('colors.accent');
-  color: transparent;
-}
-
+/* Premium Component Styling */
 .arch-card {
-  @apply border border-border bg-[#1B4332]/95 backdrop-blur-2xl p-6 relative transition-all duration-300 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.8)] hover:scale-[1.02] hover:border-accent z-10;
+  @apply bg-primary border border-border p-6 relative transition-all duration-500 rounded-sm shadow-2xl hover:border-accent/40;
 }
 
-.arch-card::after {
+.arch-card::before {
   content: '';
-  @apply absolute top-0 left-0 w-full h-[3px] bg-accent scale-x-0 transition-transform duration-300 origin-left opacity-0 pointer-events-none;
-}
-
-.arch-card:hover::after {
-  @apply scale-x-100 opacity-100;
-}
-
-.arch-card:hover {
-  @apply -translate-y-1;
+  @apply absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center font-bold uppercase transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 border border-transparent rounded-xl disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center font-bold uppercase tracking-[0.2em] text-[10px] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-6 rounded-sm;
 }
 
 .btn-primary {
-  @apply bg-[#D4AF37] text-[#0F1F17] hover:bg-[#C9A227] min-w-32 py-2 px-4;
+  @apply bg-accent text-black hover:bg-accent-bright shadow-[0_0_20px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)];
 }
 
 .btn-secondary {
-  @apply bg-[#2D6A4F] text-white border-[#D4AF37] hover:bg-[#1b4332] hover:border-[#C9A227] hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] py-2 px-4;
+  @apply bg-surface text-white border border-border hover:border-accent/50 hover:bg-white/5;
 }
 
 .btn-outline {
-  @apply bg-transparent border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0F1F17] py-2 px-4;
+  @apply bg-transparent border border-accent/30 text-accent hover:border-accent hover:bg-accent/5;
 }
 
 .btn-danger {
-  @apply bg-[#DC2626] text-white hover:bg-[#B91C1C] py-2 px-4;
+  @apply bg-red-950/20 text-red-500 border border-red-900/50 hover:bg-red-900/30;
 }
 
-/* Smooth Scrolling */
-html {
-  scroll-behavior: smooth;
+/* Typography Enhancements */
+.heading-premium {
+  @apply font-black uppercase tracking-[0.4em] text-white italic;
+}
+
+.text-premium-muted {
+  @apply text-[10px] font-bold uppercase tracking-[0.3em] text-white/40;
+}
+
+/* Logo Box Aesthetic */
+.logo-box {
+  @apply w-10 h-10 bg-accent flex items-center justify-center rounded-sm text-black font-black text-xl shadow-[0_0_20px_rgba(212,175,55,0.3)];
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-stagger-1 { animation-delay: 100ms; }
 .animate-stagger-2 { animation-delay: 200ms; }
 .animate-stagger-3 { animation-delay: 300ms; }
 .animate-stagger-4 { animation-delay: 400ms; }
+
+/* Kinetic Glow Elements */
+.kinetic-glow {
+  @apply absolute rounded-full blur-[100px] opacity-20 animate-pulse pointer-events-none -z-10;
+  background: radial-gradient(circle, theme('colors.accent') 0%, transparent 70%);
+}
+
+/* Hide scrollbar but allow scrolling */
+.custom-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

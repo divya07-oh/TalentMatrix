@@ -9,7 +9,7 @@ import {
   Check, 
   Filter,
   MoreVertical,
-  Activity,
+  Activity as ActivityIcon,
   Layers,
   Search
 } from 'lucide-react';
@@ -167,7 +167,7 @@ const AdminNotifications = () => {
       {/* Aesthetic Footer Node */}
       <div className="flex justify-center pt-8">
           <div className="flex items-center gap-3 py-6 px-12 bg-primary text-white shadow-2xl skew-x-[-12deg]">
-             <Activity size={18} className="text-accent skew-x-[12deg]" />
+             <ActivityIcon size={18} className="text-accent skew-x-[12deg]" />
              <span className="text-[10px] font-black uppercase tracking-[0.5em] skew-x-[12deg]">System Active</span>
              <div className="w-2 h-2 bg-accent animate-pulse rounded-full skew-x-[12deg]"></div>
           </div>

@@ -15,40 +15,55 @@ import {
   Filter
 } from 'lucide-react';
 
+import API from '../api';
+import { getUser } from '../utils/getUser';
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
 
-  useEffect(() => {
-    console.log("Calling API: GET /api/notifications/123");
-    setTimeout(() => {
-      const mockNotifs = [
-        { id: 1, type: 'collaboration', message: "Sam accepted your collaboration request for 'Matrix Core optimization'.", time: "2m ago", isRead: false },
-        { id: 2, type: 'verification', message: "Your 'React Native' skill has been approved by the admin.", time: "1h ago", isRead: false },
-        { id: 3, type: 'system', message: "System Maintenance scheduled for tonight at 02:00 UTC.", time: "4h ago", isRead: true },
-        { id: 4, type: 'collaboration', message: "New collaboration request from Alex for 'Universal Auth Signal'.", time: "1d ago", isRead: true },
-        { id: 5, type: 'system', message: "Welcome to TalentMatrix! Your profile is now 85% complete.", time: "2d ago", isRead: true },
-      ];
-      console.log("Response:", { success: true, count: mockNotifs.length, data: mockNotifs });
-      setNotifications(mockNotifs);
-    }, 1000);
-  }, []);
-
-  const markAsRead = (id) => {
-    console.log(`Calling API: PUT /api/notifications/read/${id}`);
-    setTimeout(() => {
-        console.log("Response:", { success: true, message: "Notification marked as read" });
-        setNotifications(notifications.map(n => 
-          n.id === id ? { ...n, isRead: true } : n
-        ));
-    }, 300);
+  const fetchNotifs = async () => {
+    if (!user || !user._id) return;
+    setLoading(true);
+    try {
+      const response = await API.get(`/notifications/${user._id}`);
+      setNotifications(response.data.userNotifications.map(n => ({
+        id: n._id,
+        type: 'system', // Default type
+        message: n.message,
+        time: 'Recently',
+        isRead: false
+      })));
+    } catch (err) {
+      console.error("Fetch Notifications Error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const clearAll = () => {
-    console.log("Calling API: DELETE /api/notifications/clear/123");
-    setTimeout(() => {
-        console.log("Response:", { success: true, message: "All notifications cleared" });
-        setNotifications([]);
-    }, 500);
+  useEffect(() => {
+    fetchNotifs();
+  }, [user?._id]);
+
+  const markAsRead = (id) => {
+    // Local update for UX
+    setNotifications(notifications.map(n => 
+      n.id === id ? { ...n, isRead: true } : n
+    ));
+  };
+
+  const clearNotification = async (id) => {
+    try {
+      await API.delete(`/notifications/${id}`);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (err) {
+      console.error("Delete Notification Error:", err);
+    }
+  };
+
+  const clearAll = async () => {
+    setNotifications([]);
   };
 
   const getIcon = (type) => {

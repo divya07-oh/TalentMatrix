@@ -15,33 +15,46 @@ import {
   Shield
 } from 'lucide-react';
 
+import API from '../api';
+
 const SkillVerification = () => {
   const [pendingSkills, setPendingSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Calling API: GET /api/skills/all");
-    setTimeout(() => {
-      const dbSkills = [
-        { id: 101, student: 'Alex Rivera', skill: 'React Architecture', github: 'https://github.com/alexr/matrix-core', cert: 'cert_react_arch_2024.pdf', status: 'pending', time: '12m ago' },
-        { id: 102, student: 'Sarah Chen', skill: 'Vite Optimization', github: 'https://github.com/sarahc/vite-module', cert: 'vite_master_cert.png', status: 'pending', time: '1h ago' },
-        { id: 103, student: 'Marco Rossi', skill: 'Tailwind Mastery', github: 'https://github.com/marcor/tailwind-blueprint', cert: 'tailwind_expert.pdf', status: 'pending', time: '3h ago' },
-        { id: 104, student: 'Deepa Jain', skill: 'Node.js Systems', github: 'https://github.com/deepaj/node-auth-signal', cert: 'nodejs_prof_cert.pdf', status: 'pending', time: '1d ago' },
-      ];
-      console.log("Response:", { success: true, count: 4, data: dbSkills });
-      setPendingSkills(dbSkills);
-    }, 1000);
+    const fetchPendingSkills = async () => {
+      try {
+        setLoading(true);
+        const response = await API.get('/skills/all');
+        setPendingSkills(response.data.skills.map(s => ({
+          id: s._id,
+          student: s.userId?.name || 'Unknown',
+          skill: s.skillName,
+          github: s.githubLink,
+          cert: s.certificate,
+          status: s.status,
+          time: new Date(s.createdAt).toLocaleDateString()
+        })));
+      } catch (error) {
+        console.error("Fetch Pending Skills Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPendingSkills();
   }, []);
 
-  const handleAction = (id, newStatus) => {
-    console.log(`Calling API: PUT /api/skills/verify/${id}`);
-    console.log("Payload:", { status: newStatus });
-    
-    setTimeout(() => {
-      console.log("Response:", { success: true, message: `Skill ${newStatus} successfully` });
-      setPendingSkills(pendingSkills.map(skill => 
+  const handleAction = async (id, newStatus) => {
+    try {
+      await API.put(`/skills/verify/${id}`, { status: newStatus });
+      setPendingSkills(prev => prev.map(skill => 
         skill.id === id ? { ...skill, status: newStatus } : skill
       ));
-    }, 800);
+    } catch (error) {
+      console.error("Action Error:", error);
+      alert("Failed to update status.");
+    }
   };
 
   return (

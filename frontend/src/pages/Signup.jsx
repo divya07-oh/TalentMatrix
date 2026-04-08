@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 
+import API from '../api';
+
 const Signup = () => {
   const [role, setRole] = useState('student');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -19,23 +22,46 @@ const Signup = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
-    console.log("Calling API: POST /api/auth/signup");
-    console.log("Payload:", { ...formData, role });
-    
-    // Simulate API delay
-    setTimeout(() => {
-      console.log("Response:", { success: true, message: "User registered successfully", userId: 123 });
-      setLoading(false);
-      if (role === 'student') {
+    try {
+      const normalizedEmail = formData.email?.toLowerCase().trim();
+      const normalizedCollege = formData.college?.trim();
+      
+      // Map college to collegeId for backend compatibility
+      const payload = {
+        name: formData.name,
+        email: normalizedEmail,
+        password: formData.password,
+        collegeId: role === 'admin' ? 'ADMIN-HQ' : normalizedCollege,
+        role: role // Send selected role explicitly
+      };
+      
+      const response = await API.post('/auth/signup', payload);
+      const { user } = response.data;
+
+      const normalizedUser = {
+        ...user,
+        _id: user.id || user._id
+      };
+
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
+
+      if (normalizedUser.role === 'student') {
         navigate('/student/dashboard');
+      } else if (normalizedUser.role === 'admin') {
+        navigate('/admin/dashboard');
       } else {
-        alert(`${role.charAt(0).toUpperCase() + role.slice(1)} Registration simulated. (Admin Dashboard Pending)`);
+        navigate('/login');
       }
-    }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,20 +69,20 @@ const Signup = () => {
       title="Create Account" 
       subtitle={`Joining as ${role.toUpperCase()}`}
     >
-      {/* Role Toggle */}
-      <div className="flex w-full mb-10 border border-border/80 overflow-hidden rounded-md relative shadow-sm">
+      {/* Centered Role Toggle */}
+      <div className="flex w-full max-w-[280px] mx-auto mb-12 border border-border/80 overflow-hidden rounded-md relative shadow-sm">
         <button 
           onClick={() => setRole('student')}
-          className={`flex-1 py-4 text-xs font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
-            role === 'student' ? 'text-[#0F1F17]' : 'text-white hover:bg-background'
+          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
+            role === 'student' ? 'text-[#0F1F17]' : 'text-white/60 hover:text-white hover:bg-background'
           }`}
         >
           Student
         </button>
         <button 
           onClick={() => setRole('admin')}
-          className={`flex-1 py-4 text-xs font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
-            role === 'admin' ? 'text-[#0F1F17]' : 'text-white hover:bg-background'
+          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-300 relative z-10 ${
+            role === 'admin' ? 'text-[#0F1F17]' : 'text-white/60 hover:text-white hover:bg-background'
           }`}
         >
           Admin
@@ -135,6 +161,12 @@ const Signup = () => {
             />
           </div>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 p-4 text-[10px] font-bold text-red-600 uppercase tracking-wider text-center">
+            Error: {error}
+          </div>
+        )}
 
         <button 
           disabled={loading}

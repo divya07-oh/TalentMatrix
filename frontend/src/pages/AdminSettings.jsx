@@ -11,6 +11,8 @@ import {
   Database
 } from 'lucide-react';
 
+import API from '../api';
+
 const AdminSettings = () => {
   const [formData, setFormData] = useState({
     collegeName: '',
@@ -21,33 +23,37 @@ const AdminSettings = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Calling API: GET /api/admin/settings");
-    setTimeout(() => {
-       const mockSettings = {
-         collegeName: 'Matrix Institute of Technology',
-         collegeDomain: 'mit.edu.in',
-         adminEmail: 'principal@mit.edu.in',
-         description: 'A leading technology institute specializing in computer science research and engineering.'
-       };
-       console.log("Response:", { success: true, data: mockSettings });
-       setFormData(mockSettings);
-    }, 1000);
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const response = await API.get('/admin/settings');
+        if (response.data.settings) {
+          setFormData(response.data.settings);
+        }
+      } catch (err) {
+        console.error("Fetch Settings Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    console.log("Calling API: PUT /api/admin/settings");
-    console.log("Payload:", formData);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      console.log("Response:", { success: true, message: "Settings updated successfully" });
-      setIsSaving(false);
+    try {
+      await API.put('/admin/settings', formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    }, 1500);
+    } catch (err) {
+      console.error("Save Settings Error:", err);
+      alert("Failed to update settings.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
