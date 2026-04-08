@@ -1,17 +1,18 @@
-const mockUsers = require('../utils/mockUsers');
-const mockSkills = require('../utils/mockSkills');
-const mockCollaborations = require('../utils/mockCollaborations');
+const User = require('../models/User');
+const Skill = require('../models/Skill');
+const Collaboration = require('../models/Collaboration');
 
-exports.getOverview = (req, res) => {
+// GET /api/analytics/overview
+exports.getOverview = async (req, res) => {
     try {
-        const totalUsers = mockUsers.length;
-        const totalSkills = mockSkills.length;
+        const totalUsers = await User.countDocuments();
+        const totalSkills = await Skill.countDocuments();
         
-        const approvedSkills = mockSkills.filter(s => s.status === 'approved').length;
-        const pendingSkills = mockSkills.filter(s => s.status === 'pending').length;
+        const approvedSkills = await Skill.countDocuments({ status: 'approved' });
+        const pendingSkills = await Skill.countDocuments({ status: 'pending' });
         
-        const totalCollaborations = mockCollaborations.length;
-        const activeCollaborations = mockCollaborations.filter(c => c.status === 'accepted').length;
+        const totalCollaborations = await Collaboration.countDocuments();
+        const activeCollaborations = await Collaboration.countDocuments({ status: 'accepted' });
 
         return res.status(200).json({
             message: "Analytics overview retrieved successfully",

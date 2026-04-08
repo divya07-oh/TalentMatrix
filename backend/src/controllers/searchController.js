@@ -1,71 +1,72 @@
-const mockUsers = require('../utils/mockUsers');
-const mockSkills = require('../utils/mockSkills');
+const User = require('../models/User');
+const Skill = require('../models/Skill');
 
 // GET /api/search/skills
 // Search students by skill
-exports.searchStudentsBySkill = (req, res) => {
-  const { skill, collegeId } = req.query;
+exports.searchStudentsBySkill = async (req, res) => {
+  try {
+    const { skill, collegeId } = req.query;
 
-  // 1. Validation
-  if (!skill) {
-    return res.status(400).json({ message: "Skill query parameter is required." });
-  }
+    // 1. Validation
+    if (!skill) {
+      return res.status(400).json({ message: "Skill query parameter is required." });
+    }
 
-  const searchSkill = skill.toLowerCase();
+    // 2. Filter Skills using Regex for case-insensitive partial match
+    // and populate user details
+    const matchedSkills = await Skill.find({
+      skillName: { $regex: skill, $options: 'i' },
+      status: 'approved' // Only search approved skills
+    }).populate('userId', 'name email collegeId');
 
-  // 2. Filter Skills
-  const matchedSkills = mockSkills.filter(s => s.skillName.toLowerCase() === searchSkill);
+    // If no skills matched at all
+    if (matchedSkills.length === 0) {
+      return res.status(200).json({ message: "No students found", data: [] });
+    }
 
-  // If no skills matched at all
-  if (matchedSkills.length === 0) {
-    return res.status(200).json({ message: "No students found", data: [] });
-  }
+    // 3. Transform data and handle duplicates (one student might have multiple matching skills)
+    let matchingUsers = [];
+    const processedUserIds = new Set();
 
-  // 3. Extract userIds and find corresponding users
-  let matchingUsers = [];
-  const processedUserIds = new Set();
+    matchedSkills.forEach(matchedSkill => {
+      const user = matchedSkill.userId;
+      if (user && !processedUserIds.has(user._id.toString())) {
+        
+        // Optional College Filtering
+        if (collegeId && user.collegeId !== collegeId) {
+          return;
+        }
 
-  matchedSkills.forEach(matchedSkill => {
-    // Only process each userId once to prevent duplicates
-    if (!processedUserIds.has(matchedSkill.userId)) {
-      processedUserIds.add(matchedSkill.userId);
+        processedUserIds.add(user._id.toString());
 
-      const user = mockUsers.find(u => u.id.toString() === matchedSkill.userId.toString());
-      
-      if (user) {
-        // Collect all skills of this user that match the search (usually just one, but handle if multiple)
-        const userMatchedSkills = matchedSkills.filter(s => s.userId === user.id);
+        // Find all matched skills for this specific user in the current result set
+        const userMatchedSkills = matchedSkills.filter(s => 
+          s.userId && s.userId._id.toString() === user._id.toString()
+        );
         
         matchingUsers.push({
-          id: user.id,
+          id: user._id,
           name: user.name,
           email: user.email,
-          collegeId: user.collegeId || (user.email.split('@')[1] ? user.email.split('@')[1].split('.')[0] : 'unknown'), // fallback since mock users might not have collegeId explicitly set
-          skills: userMatchedSkills
+          collegeId: user.collegeId,
+          skills: userMatchedSkills.map(s => ({
+            id: s._id,
+            skillName: s.skillName,
+            status: s.status
+          }))
         });
       }
-    }
-  });
+    });
 
-  // 4. College Filtering
-  if (collegeId) {
-    matchingUsers = matchingUsers.filter(u => u.collegeId === collegeId);
+    // 4. Sorting (alphabetically by name)
+    matchingUsers.sort((a, b) => a.name.localeCompare(b.name));
+
+    return res.status(200).json({
+      message: "Students found successfully",
+      data: matchingUsers
+    });
+  } catch (error) {
+    console.error("Search Skills Error:", error);
+    return res.status(500).json({ message: "Internal server error during search." });
   }
-
-  // 5. Empty State Check after filtering
-  if (matchingUsers.length === 0) {
-    return res.status(200).json({ message: "No students found", data: [] });
-  }
-
-  // 6. Sorting (alphabetically by name)
-  matchingUsers.sort((a, b) => {
-    if (a.name < b.name) return -1;
-    if (a.name > b.name) return 1;
-    return 0;
-  });
-
-  return res.status(200).json({
-    message: "Students found successfully",
-    data: matchingUsers
-  });
 };

@@ -1,33 +1,29 @@
-const mockProjects = require('../utils/mockProjects');
+const Project = require('../models/Project');
 
 // POST /api/projects/create
-exports.createProject = (req, res) => {
+exports.createProject = async (req, res) => {
     try {
-        const { projectName, members } = req.body;
+        const { name, userId, members } = req.body;
 
-        if (!projectName || !projectName.trim()) {
+        if (!name || !name.trim()) {
             return res.status(400).json({ message: "Project name is required." });
         }
 
-        let projectMembers = members;
-        if (!projectMembers || !Array.isArray(projectMembers)) {
-            projectMembers = [];
-        }
+        const projectMembers = Array.isArray(members) ? members : [];
 
-        const newProject = {
-            id: mockProjects.length > 0 ? mockProjects[mockProjects.length - 1].id + 1 : 1,
-            projectName,
+        const newProject = new Project({
+            name,
+            owner: userId,
             members: projectMembers,
             progress: 0,
-            status: "active",
-            createdAt: new Date().toISOString()
-        };
+            status: "active"
+        });
 
-        mockProjects.push(newProject);
+        await newProject.save();
 
         return res.status(201).json({
             message: "Project created successfully.",
-            data: newProject
+            project: newProject
         });
     } catch (error) {
         console.error("Create Project Error:", error);
@@ -36,7 +32,7 @@ exports.createProject = (req, res) => {
 };
 
 // GET /api/projects/user/:userId
-exports.getUserProjects = (req, res) => {
+exports.getUserProjects = async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -44,14 +40,14 @@ exports.getUserProjects = (req, res) => {
             return res.status(400).json({ message: "User ID is required." });
         }
 
-        const userProjects = mockProjects.filter(p => p.members.includes(userId.toString()));
-
-        // Sort by latest first
-        userProjects.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        const userProjects = await Project.find({
+            owner: userId
+        })
+        .sort({ createdAt: -1 });
 
         return res.status(200).json({
             message: "User projects retrieved successfully.",
-            data: userProjects
+            projects: userProjects
         });
     } catch (error) {
         console.error("Get User Projects Error:", error);
@@ -60,12 +56,12 @@ exports.getUserProjects = (req, res) => {
 };
 
 // PUT /api/projects/progress/:id
-exports.updateProgress = (req, res) => {
+exports.updateProgress = async (req, res) => {
     try {
         const { id } = req.params;
         const { progress, status } = req.body;
 
-        const project = mockProjects.find(p => p.id.toString() === id.toString());
+        const project = await Project.findById(id);
 
         if (!project) {
             return res.status(404).json({ message: "Project not found." });
@@ -91,6 +87,8 @@ exports.updateProgress = (req, res) => {
             }
             project.status = status;
         }
+
+        await project.save();
 
         return res.status(200).json({
             message: "Project progress updated successfully.",

@@ -1,8 +1,7 @@
-const mockUsers = require('../utils/mockUsers');
-const mockSkills = require('../utils/mockSkills');
-const mockCollaborations = require('../utils/mockCollaborations');
+const Skill = require('../models/Skill');
+const Collaboration = require('../models/Collaboration');
 
-exports.getDashboardStats = (req, res) => {
+exports.getDashboardStats = async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -10,49 +9,25 @@ exports.getDashboardStats = (req, res) => {
             return res.status(400).json({ message: "User ID is required." });
         }
 
-        // 1. User basic info
-        const user = mockUsers.find(u => u.id.toString() === userId.toString());
-        
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
+        // 1. Skill Stats
+        const totalSkills = await Skill.countDocuments({ userId });
+        const approvedSkills = await Skill.countDocuments({ userId, status: 'approved' });
+        const pendingSkills = await Skill.countDocuments({ userId, status: 'pending' });
 
-        const userInfo = {
-            name: user.name,
-            email: user.email
-        };
-
-        // 2, 3, 4. Skills Stats
-        const userSkills = mockSkills.filter(s => s.userId.toString() === userId.toString());
-        
-        const totalSkills = userSkills.length;
-        const approvedSkills = userSkills.filter(s => s.status === 'approved').length;
-        const pendingSkills = userSkills.filter(s => s.status === 'pending').length;
-
-        // 5. Collaboration Stats
-        const sentRequests = mockCollaborations.filter(c => c.senderId.toString() === userId.toString());
-        const receivedRequests = mockCollaborations.filter(c => c.receiverId.toString() === userId.toString());
-        
-        const totalSent = sentRequests.length;
-        const totalReceived = receivedRequests.length;
-        
-        const acceptedCollaborations = mockCollaborations.filter(c => 
-            (c.senderId.toString() === userId.toString() || c.receiverId.toString() === userId.toString()) && 
-            c.status === 'accepted'
-        ).length;
+        // 2. Collaboration Stats (Accepted)
+        const collaborationCount = await Collaboration.countDocuments({
+            $or: [
+                { senderId: userId },
+                { receiverId: userId }
+            ],
+            status: 'accepted'
+        });
 
         return res.status(200).json({
-            userInfo,
-            skills: {
-                totalSkills,
-                approvedSkills,
-                pendingSkills
-            },
-            collaborations: {
-                totalSent,
-                totalReceived,
-                acceptedCollaborations
-            }
+            totalSkills,
+            approvedSkills,
+            pendingSkills,
+            collaborationCount
         });
 
     } catch (error) {

@@ -1,121 +1,112 @@
-const mockUsers = require('../utils/mockUsers');
+const User = require('../models/User');
 const { addNotification } = require('../utils/notificationService');
-
 
 const validateEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
 
-exports.signup = (req, res) => {
-  const { name, email, password } = req.body;
+// POST /api/auth/signup
+exports.signup = async (req, res) => {
+  try {
+    let { name, email, password, collegeId } = req.body;
 
-  // Check for empty fields
-  if (!name || name.trim() === "") {
-    return res.status(400).json({ message: "Name is required." });
-  }
-  if (!email || email.trim() === "") {
-    return res.status(400).json({ message: "Email is required." });
-  }
-  if (!password || password.trim() === "") {
-    return res.status(400).json({ message: "Password is required." });
-  }
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+    
+    // 1. Basic email normalization
+    email = email.toLowerCase().trim();
 
-  // Validate email format
-  if (!validateEmail(email)) {
-    return res.status(400).json({ message: "Invalid email format." });
-  }
+    if (!validateEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format." });
+    }
 
-  // Check if email already exists
-  const userExists = mockUsers.find(u => u.email === email);
-  if (userExists) {
-    return res.status(400).json({ message: "User with this email already exists." });
-  }
+    // 2. Determine Role based on email
+    const isAdminEmail = email.startsWith('admin@') && email.endsWith('.edu');
+    const role = isAdminEmail ? 'admin' : 'student';
 
-  // Assign role: admin if admin@college.edu, else student
-  const isAdminEmail = email.startsWith('admin@') && email.endsWith('.edu');
-  const role = isAdminEmail ? 'admin' : 'student';
+    // 3. Handle College ID requirement
+    // Admins don't need to specify a college, we give them a default node
+    const finalCollegeId = (role === 'admin' && !collegeId) ? 'ADMIN-HQ' : collegeId;
 
-  // Save new user (simulated)
-  const newUser = {
-    id: mockUsers.length + 1,
-    name,
-    email,
-    password, 
-    role
-  };
+    if (!name || !password || !finalCollegeId) {
+      return res.status(400).json({ message: "Name, password, and collegeId (for students) are required." });
+    }
 
-  mockUsers.push(newUser);
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User with this email already exists." });
+    }
 
-  if (role === 'student') {
-    addNotification(1, "A new student has registered", "system", "admin");
-  }
+    const newUser = new User({
+      name,
+      email,
+      password, // Note: hash in production
+      role,
+      collegeId: finalCollegeId
+    });
 
-  // Return success response without password
-  const { password: _, ...userWithoutPassword } = newUser;
-  
-  res.status(201).json({
-    message: "User registered successfully.",
-    user: userWithoutPassword
-  });
-};
+    await newUser.save();
 
-exports.login = (req, res) => {
-  const { email, password } = req.body;
+    if (role === 'student') {
+      await addNotification("admin", "A new student has registered", "system", "admin");
+    }
 
-  if (!email || email.trim() === "") {
-    return res.status(400).json({ message: "Email is required." });
-  }
-
-  // Validate email format
-  if (!validateEmail(email)) {
-    return res.status(400).json({ message: "Invalid email format." });
-  }
-
-  // Check for dynamic roles (e.g., admin@college.edu vs alex@college.edu)
-  const isAdminEmail = email.startsWith('admin@') && email.endsWith('.edu');
-  const isStudentDomain = email.endsWith('.edu') && !isAdminEmail;
-
-  if (isStudentDomain) {
-    // Student Login - Passwordless/Domain-Based
-    const [namePart, domain] = email.split('@');
-    const college = domain.split('.')[0];
-
-    return res.status(200).json({
-      message: "Student login successful via college domain.",
+    res.status(201).json({
+      message: "User registered successfully.",
       user: {
-        id: `s-${Date.now()}`,
-        name: namePart.charAt(0).toUpperCase() + namePart.slice(1),
-        role: "student",
-        college: college.toUpperCase()
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role
       }
     });
+
+  } catch (error) {
+    console.error("Signup Error:", error);
+    res.status(500).json({ message: "Internal server error during signup." });
   }
+};
 
-  // Traditional Admin Login
-  if (!password || password.trim() === "") {
-    return res.status(400).json({ message: "Password is required for admin login." });
-  }
+// POST /api/auth/login
+exports.login = async (req, res) => {
+  try {
+    let { email, password } = req.body;
 
-  // Find admin by email
-  const user = mockUsers.find(u => u.email === email);
-
-  if (!user) {
-    return res.status(404).json({ message: "Admin account not found." });
-  }
-
-  // Validate admin password
-  if (user.password !== password) {
-    return res.status(401).json({ message: "Invalid admin password." });
-  }
-
-  // Return success response with admin details
-  res.status(200).json({
-    message: "Admin login successful.",
-    user: {
-      id: user.id,
-      name: user.name,
-      role: user.role
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Email is required." });
     }
-  });
+
+    email = email.toLowerCase().trim();
+
+    if (!validateEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format." });
+    }
+
+    // Traditional Login (Mongoose)
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "Account not found." });
+    }
+
+    if (user.password !== password) {
+      return res.status(401).json({ message: "Invalid password." });
+    }
+
+    res.status(200).json({
+      message: "Login successful.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ message: "Internal server error during login." });
+  }
 };

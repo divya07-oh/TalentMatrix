@@ -12,6 +12,9 @@ router.get('/user/:userId', skillController.getUserSkills);
 // GET /api/skills/pending
 router.get('/pending', skillController.getPendingSkills);
 
+// GET /api/skills/all (NEW)
+router.get('/all', skillController.getAllSkills);
+
 // PUT /api/skills/verify/:skillId
 router.put('/verify/:skillId', skillController.updateSkillStatus);
 

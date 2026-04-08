@@ -1,100 +1,114 @@
-const mockSkills = require('../utils/mockSkills');
+const Skill = require('../models/Skill');
 const { addNotification } = require('../utils/notificationService');
 
 // POST /api/skills/add
-// Add a new skill with certificate upload
-exports.addSkill = (req, res) => {
-  const { userId, skillName, projectRepoLink } = req.body;
-  const certificateFile = req.file;
+exports.addSkill = async (req, res) => {
+  try {
+    const { userId, skillName, projectRepoLink } = req.body;
+    const certificateFile = req.file;
 
-  if (!skillName) {
-    return res.status(400).json({ message: "skillName is required." });
+    if (!skillName || !certificateFile || !userId) {
+      return res.status(400).json({ message: "skillName, certificate, and userId are required." });
+    }
+
+    const newSkill = new Skill({
+      userId,
+      skillName,
+      githubLink: projectRepoLink || "",
+      certificate: certificateFile.path.replace(/\\/g, '/'),
+      status: 'pending'
+    });
+
+    await newSkill.save();
+
+    // Admin Notification
+    await addNotification("admin", "A new skill is pending verification", "skill", "admin");
+
+    res.status(201).json({
+      message: "Skill submitted for verification successfully.",
+      skill: newSkill
+    });
+  } catch (error) {
+    console.error("Skill Add Error:", error);
+    res.status(500).json({ message: "Internal server error during skill submission." });
   }
-  
-  if (!certificateFile) {
-    return res.status(400).json({ message: "certificate file is required." });
-  }
-
-  // Note: projectRepoLink might be optional depending on strictness, but we'll accept it
-  // userId is also required for mock purpose
-  if (!userId) {
-     return res.status(400).json({ message: "userId is required." });
-  }
-
-  const newSkill = {
-    id: mockSkills.length > 0 ? mockSkills[mockSkills.length - 1].id + 1 : 1,
-    userId,
-    skillName,
-    projectRepoLink: projectRepoLink || "",
-    certificateFile: certificateFile.path.replace(/\\/g, '/'), // normalize path
-    status: 'pending'
-  };
-
-  mockSkills.push(newSkill);
-
-  // Admin Notification
-  addNotification(1, "A new skill is pending verification", "system", "admin");
-
-  res.status(201).json({
-    message: "Skill submitted for verification successfully.",
-    skill: newSkill
-  });
 };
 
 // GET /api/skills/user/:userId
-// Get all skills for a specific student
-exports.getUserSkills = (req, res) => {
-  const { userId } = req.params;
-  
-  if (!userId) {
-    return res.status(400).json({ message: "User ID is required in URL parameters." });
+exports.getUserSkills = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const skills = await Skill.find({ userId });
+    
+    res.status(200).json({
+      message: "User skills retrieved successfully.",
+      skills
+    });
+  } catch (error) {
+    console.error("Get User Skills Error:", error);
+    res.status(500).json({ message: "Internal server error retrieving user skills." });
   }
-
-  const userSkills = mockSkills.filter(s => s.userId.toString() === userId.toString());
-  
-  res.status(200).json({
-    message: "User skills retrieved successfully.",
-    skills: userSkills
-  });
 };
 
 // GET /api/skills/pending
-// Get all pending skills (for admin review)
-exports.getPendingSkills = (req, res) => {
-  const pendingSkills = mockSkills.filter(s => s.status === 'pending');
-  
-  res.status(200).json({
-    message: "Pending skills retrieved successfully.",
-    skills: pendingSkills
-  });
+exports.getPendingSkills = async (req, res) => {
+  try {
+    const pendingSkills = await Skill.find({ status: 'pending' }).populate('userId', 'name email');
+    
+    res.status(200).json({
+      message: "Pending skills retrieved successfully.",
+      skills: pendingSkills
+    });
+  } catch (error) {
+    console.error("Get Pending Skills Error:", error);
+    res.status(500).json({ message: "Internal server error retrieving pending skills." });
+  }
+};
+
+// GET /api/skills/all (NEW)
+exports.getAllSkills = async (req, res) => {
+  try {
+    const allSkills = await Skill.find().populate('userId', 'name email');
+    
+    res.status(200).json({
+      message: "All skill transmissions retrieved.",
+      skills: allSkills
+    });
+  } catch (error) {
+    console.error("Get All Skills Error:", error);
+    res.status(500).json({ message: "Internal server error retrieving skills." });
+  }
 };
 
 // PUT /api/skills/verify/:skillId
-// Update a skill's status (approve/reject)
-exports.updateSkillStatus = (req, res) => {
-  const { skillId } = req.params;
-  const { status } = req.body;
+exports.updateSkillStatus = async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const { status } = req.body;
 
-  if (!['approved', 'rejected', 'pending'].includes(status)) {
-    return res.status(400).json({ message: "Invalid status. Must be 'approved', 'rejected', or 'pending'." });
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ message: "Invalid status." });
+    }
+
+    const updatedSkill = await Skill.findByIdAndUpdate(skillId, { status }, { new: true });
+
+    if (!updatedSkill) {
+      return res.status(404).json({ message: "Skill not found." });
+    }
+
+    await addNotification(
+      updatedSkill.userId, 
+      `Your skill "${updatedSkill.skillName}" has been ${status}`, 
+      "skill", 
+      "student"
+    );
+
+    res.status(200).json({
+      message: `Skill status updated to ${status}.`,
+      skill: updatedSkill
+    });
+  } catch (error) {
+    console.error("Update Skill Status Error:", error);
+    res.status(500).json({ message: "Internal server error during verification." });
   }
-
-  const skillIndex = mockSkills.findIndex(s => s.id.toString() === skillId.toString());
-
-  if (skillIndex === -1) {
-    return res.status(404).json({ message: "Skill not found." });
-  }
-
-  mockSkills[skillIndex].status = status;
-
-  if (status === 'approved') {
-    addNotification(mockSkills[skillIndex].userId, "Your skill has been approved", "skill", "student");
-  } else if (status === 'rejected') {
-    addNotification(mockSkills[skillIndex].userId, "Your skill has been rejected", "skill", "student");
-  }
-
-  res.status(200).json({
-    message: `Skill status updated to ${status}.`,
-    skill: mockSkills[skillIndex]
-  });
 };

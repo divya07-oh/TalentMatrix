@@ -1,67 +1,72 @@
-const mockNotifications = require('../utils/mockNotifications');
+const Notification = require('../models/Notification');
 
 // GET /api/notifications/:userId
-exports.getNotifications = (req, res) => {
-  const { userId } = req.params;
+exports.getNotifications = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
 
-  if (!userId) {
-    return res.status(400).json({ message: "User ID is required." });
+    res.status(200).json({
+      message: "Notifications retrieved successfully.",
+      userNotifications: notifications
+    });
+  } catch (error) {
+    console.error("Get Notifications Error:", error);
+    res.status(500).json({ message: "Internal server error retrieving notifications." });
   }
-
-  const userNotifications = mockNotifications.filter(n => n.userId === userId.toString());
-
-  // Sort latest first
-  userNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  return res.status(200).json({
-    message: "Notifications retrieved successfully.",
-    data: userNotifications
-  });
 };
 
 // PUT /api/notifications/read/:id
-exports.markAsRead = (req, res) => {
-  const { id } = req.params;
+exports.markAsRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Notification.findByIdAndUpdate(id, { read: true }, { new: true });
 
-  const notifIndex = mockNotifications.findIndex(n => n.id.toString() === id.toString());
+    if (!updated) {
+      return res.status(404).json({ message: "Protocol error: Target notification not found." });
+    }
 
-  if (notifIndex === -1) {
-    return res.status(404).json({ message: "Notification not found." });
+    res.status(200).json({
+      message: "Notification status updated to read.",
+      notification: updated
+    });
+  } catch (error) {
+    console.error("Mark Notification Read Error:", error);
+    res.status(500).json({ message: "Internal server error marking notification as read." });
   }
+};
 
-  mockNotifications[notifIndex].isRead = true;
+// DELETE /api/notifications/:id (NEW)
+exports.deleteNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Notification.findByIdAndDelete(id);
 
-  return res.status(200).json({
-    message: "Notification marked as read.",
-    data: mockNotifications[notifIndex]
-  });
+    if (!deleted) {
+      return res.status(404).json({ message: "Notification not found." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Notification deleted"
+    });
+  } catch (error) {
+    console.error("Delete Notification Error:", error);
+    res.status(500).json({ message: "Internal server error deleting notification." });
+  }
 };
 
 // DELETE /api/notifications/clear/:userId
-exports.clearNotifications = (req, res) => {
-  const { userId } = req.params;
+exports.clearNotifications = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await Notification.deleteMany({ userId });
 
-  if (!userId) {
-    return res.status(400).json({ message: "User ID is required." });
+    res.status(200).json({
+      message: "Notification sector cleared successfully."
+    });
+  } catch (error) {
+    console.error("Clear Notifications Error:", error);
+    res.status(500).json({ message: "Internal server error clearing notifications." });
   }
-
-  // Remove all matching notifications by mutating original array length and filtering
-  let initialLength = mockNotifications.length;
-  
-  // We have to filter the array in place or reassign (since it's a const array, we splice)
-  for (let i = mockNotifications.length - 1; i >= 0; i--) {
-      if (mockNotifications[i].userId === userId.toString()) {
-          mockNotifications.splice(i, 1);
-      }
-  }
-
-  let finalLength = mockNotifications.length;
-
-  if (initialLength === finalLength) {
-    return res.status(200).json({ message: "No notifications to clear." });
-  }
-
-  return res.status(200).json({
-    message: "Notifications cleared successfully."
-  });
 };

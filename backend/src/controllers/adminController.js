@@ -1,166 +1,135 @@
-const mockUsers = require('../utils/mockUsers');
-const mockSkills = require('../utils/mockSkills');
-const mockCollaborations = require('../utils/mockCollaborations');
+const User = require('../models/User');
+const Skill = require('../models/Skill');
+const Collaboration = require('../models/Collaboration');
+const AdminSettings = require('../models/AdminSettings');
 
-exports.getDashboardStats = (req, res) => {
+// GET /api/admin/stats
+exports.getDashboardStats = async (req, res) => {
     try {
-        // 1. Total Students
-        const totalStudents = mockUsers.filter(u => u.role === 'student').length;
-        
-        // 2. Total Admins
-        const totalAdmins = mockUsers.filter(u => u.role === 'admin').length;
-        
-        // 3. Total Skills
-        const totalSkills = mockSkills.length;
-        
-        // 4. Pending Skill Verifications
-        const pendingSkills = mockSkills.filter(s => s.status === 'pending').length;
-        
-        // 5. Approved Skills
-        const approvedSkills = mockSkills.filter(s => s.status === 'approved').length;
-        
-        // 6. Total Collaborations
-        const totalCollaborations = mockCollaborations.length;
-        
-        // 7. Active Collaborations
-        const activeCollaborations = mockCollaborations.filter(c => c.status === 'accepted').length;
-        
-        // 8. Recent Activities
-        // Reverse arrays to get the latest first, then map to a standard format
-        const recentSkills = [...mockSkills].reverse().slice(0, 5).map(s => ({
+        const totalStudents = await User.countDocuments({ role: 'student' });
+        const totalSkills = await Skill.countDocuments();
+        const pendingSkills = await Skill.countDocuments({ status: 'pending' });
+        const approvedSkills = await Skill.countDocuments({ status: 'approved' });
+        const totalCollaborations = await Collaboration.countDocuments();
+
+        // Recent Activities: Skill Submissions
+        const recentSkillsRaw = await Skill.find().sort({ createdAt: -1 }).limit(5);
+        const recentSkills = recentSkillsRaw.map(s => ({
             activityType: 'skill_submission',
-            id: s.id,
-            userId: s.userId,
+            id: s._id,
             title: `Skill Submitted: ${s.skillName}`,
             status: s.status,
-            date: s.createdAt || new Date().toISOString() // Fallback if createdAt doesn't exist yet
+            date: s.createdAt
         }));
         
-        const recentCollabs = [...mockCollaborations].reverse().slice(0, 5).map(c => ({
+        // Recent Activities: Collaboration Requests
+        const recentCollabsRaw = await Collaboration.find().sort({ createdAt: -1 }).limit(5);
+        const recentCollabs = recentCollabsRaw.map(c => ({
             activityType: 'collaboration_request',
-            id: c.id,
-            senderId: c.senderId,
-            title: `Collaboration: ${c.message.substring(0, 30)}${c.message.length > 30 ? '...' : ''}`,
+            id: c._id,
+            title: `Collaboration Request`,
             status: c.status,
-            date: c.createdAt || new Date().toISOString()
+            date: c.createdAt
         }));
-        
-        // Combine and sort by date descending, then slice to get top 5 overall
+
         const recentActivities = [...recentSkills, ...recentCollabs]
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .slice(0, 5);
-        
-        // 9. Top Skills Added
-        const skillCounts = {};
-        mockSkills.forEach(s => {
-            if (s.skillName) {
-                const name = s.skillName;
-                skillCounts[name] = (skillCounts[name] || 0) + 1;
-            }
-        });
-        
-        const topSkills = Object.entries(skillCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([name, count]) => ({ name, count }));
 
         return res.status(200).json({
             totalStudents,
-            totalAdmins,
             totalSkills,
             pendingSkills,
             approvedSkills,
             totalCollaborations,
-            activeCollaborations,
-            recentActivities,
-            topSkills
+            recentActivities
         });
     } catch (error) {
-        console.error("Dashboard Stats Error:", error);
+        console.error("Admin Dashboard Stats Error:", error);
         return res.status(500).json({ message: "Internal server error retrieving dashboard stats." });
     }
 };
 
-exports.getInsights = (req, res) => {
+// GET /api/admin/insights
+exports.getInsights = async (req, res) => {
     try {
-        // 1. Top 5 Skills
-        const skillCounts = {};
-        mockSkills.forEach(s => {
-            if (s.skillName) {
-                const name = s.skillName;
-                skillCounts[name] = (skillCounts[name] || 0) + 1;
-            }
-        });
-        
-        const topSkills = Object.entries(skillCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([name, count]) => ({ name, count }));
-
-        // 2. Most Active Students
-        const userActivityCount = {};
-        
-        // Count skills added by user
-        mockSkills.forEach(s => {
-            const uid = s.userId.toString();
-            userActivityCount[uid] = (userActivityCount[uid] || 0) + 1;
-        });
-        
-        // Count collaborations matching user
-        mockCollaborations.forEach(c => {
-            const sender = c.senderId.toString();
-            const receiver = c.receiverId.toString();
-            userActivityCount[sender] = (userActivityCount[sender] || 0) + 1;
-            userActivityCount[receiver] = (userActivityCount[receiver] || 0) + 1;
-        });
-
-        const activeStudents = Object.entries(userActivityCount)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([userId, totalActivities]) => {
-                const user = mockUsers.find(u => u.id.toString() === userId);
-                return {
-                    userId,
-                    name: user ? user.name : "Unknown",
-                    email: user ? user.email : "N/A",
-                    totalActivities
-                };
-            });
-
-        // 3. Recent Activities (reusing logic but returning more details if necessary)
-        const recentSkills = [...mockSkills].reverse().slice(0, 5).map(s => ({
-            activityType: 'skill_submission',
-            id: s.id,
-            userId: s.userId,
-            title: `Skill Submitted: ${s.skillName}`,
-            status: s.status,
-            date: s.createdAt || new Date().toISOString()
-        }));
-        
-        const recentCollabs = [...mockCollaborations].reverse().slice(0, 5).map(c => ({
-            activityType: 'collaboration_request',
-            id: c.id,
-            senderId: c.senderId,
-            title: `Collaboration: ${c.message.substring(0, 30)}${c.message.length > 30 ? '...' : ''}`,
-            status: c.status,
-            date: c.createdAt || new Date().toISOString()
-        }));
-        
-        const recentActivities = [...recentSkills, ...recentCollabs]
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 10);
+        // Aggregate skill distribution
+        const topSkills = await Skill.aggregate([
+            { $group: { _id: "$skillName", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 },
+            { $project: { name: "$_id", count: 1, _id: 0 } }
+        ]);
 
         return res.status(200).json({
             message: "Insights retrieved successfully",
             data: {
                 topSkills,
-                activeStudents,
-                recentActivities
+                recentActivities: [] 
             }
         });
-
     } catch (error) {
         console.error("Admin Insights Error:", error);
         return res.status(500).json({ message: "Internal server error retrieving insights." });
     }
+};
+
+// GET /api/admin/settings
+exports.getSettings = async (req, res) => {
+  try {
+    let settings = await AdminSettings.findOne();
+    if (!settings) {
+      // Return a default if none exists yet
+      return res.status(200).json({
+        success: true,
+        settings: {
+          collegeName: "Default College",
+          collegeDomain: "college.edu",
+          description: "Default description",
+          adminEmail: "admin@college.edu"
+        }
+      });
+    }
+    res.status(200).json({
+      success: true,
+      settings
+    });
+  } catch (error) {
+    console.error("Admin Settings Error:", error);
+    res.status(500).json({ message: "Internal server error retrieving settings." });
+  }
+};
+
+// PUT /api/admin/settings
+exports.updateSettings = async (req, res) => {
+  try {
+    const { collegeName, collegeDomain, description, adminEmail } = req.body;
+    
+    let settings = await AdminSettings.findOne();
+    
+    if (settings) {
+      settings.collegeName = collegeName || settings.collegeName;
+      settings.collegeDomain = collegeDomain || settings.collegeDomain;
+      settings.description = description || settings.description;
+      settings.adminEmail = adminEmail || settings.adminEmail;
+      await settings.save();
+    } else {
+      settings = new AdminSettings({
+        collegeName: collegeName || "TalentMatrix College",
+        collegeDomain: collegeDomain || "college.edu",
+        description: description || "Collaborative Skill Marketplace",
+        adminEmail: adminEmail || "admin@college.edu"
+      });
+      await settings.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Settings updated successfully",
+      settings
+    });
+  } catch (error) {
+    console.error("Admin Settings Update Error:", error);
+    res.status(500).json({ message: "Internal server error updating settings." });
+  }
 };
