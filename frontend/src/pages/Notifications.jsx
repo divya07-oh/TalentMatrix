@@ -9,10 +9,8 @@ import {
   MessageSquare,
   Clock,
   ArrowRight,
-  MoreVertical,
   Circle,
-  Inbox,
-  Filter
+  Inbox
 } from 'lucide-react';
 
 import API from '../api';
@@ -63,7 +61,17 @@ const Notifications = () => {
   };
 
   const clearAll = async () => {
-    setNotifications([]);
+    if (!user || !user._id) return;
+    try {
+      setLoading(true);
+      await API.delete(`/notifications/clear/${user._id}`);
+      setNotifications([]);
+    } catch (err) {
+      console.error("Clear All Notifications Error:", err);
+      alert("Failed to clear notifications.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getIcon = (type) => {
@@ -98,13 +106,11 @@ const Notifications = () => {
         <div className="flex items-center gap-4">
             <button 
                 onClick={clearAll}
-                className="btn btn-danger font-black uppercase tracking-[0.3em] flex items-center gap-2"
+                disabled={loading}
+                className="btn btn-danger font-black uppercase tracking-[0.3em] flex items-center gap-2 disabled:opacity-50"
             >
-                <Trash2 size={14} /> Clear All
-            </button>
-            <div className="h-6 w-[1px] bg-border hidden md:block"></div>
-            <button className="btn btn-secondary font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                <Filter size={14} /> Filter
+                {loading ? <Clock size={14} className="animate-spin" /> : <Trash2 size={14} />} 
+                {loading ? 'Clearing...' : 'Clear All'}
             </button>
         </div>
       </div>
@@ -163,8 +169,11 @@ const Notifications = () => {
                         className="w-2 h-2 bg-accent rounded-full shadow-[0_0_10px_rgba(255,193,7,0.8)]"
                     />
                   )}
-                  <button className="btn btn-secondary p-2 opacity-0 group-hover:opacity-100">
-                    <MoreVertical size={16} />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); clearNotification(notif.id); }}
+                    className="btn btn-secondary p-2 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:border-red-500 transition-colors"
+                  >
+                    <Trash2 size={16} />
                   </button>
                 </div>
 

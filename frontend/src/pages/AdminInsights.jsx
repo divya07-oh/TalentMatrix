@@ -4,7 +4,6 @@ import {
   Layers, 
   Activity as ActivityIcon, 
   Users, 
-  PlusCircle, 
   Zap,
   Globe,
   Award,
@@ -16,13 +15,18 @@ import API from '../api';
 
 const AdminInsights = () => {
   const [data, setData] = useState(null);
+  const [dashStats, setDashStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchInsights = async () => {
     try {
       setLoading(true);
-      const response = await API.get('/admin/insights');
-      setData(response.data);
+      const [insightsRes, dashRes] = await Promise.all([
+        API.get('/admin/insights'),
+        API.get('/admin/dashboard')
+      ]);
+      setData(insightsRes.data);
+      setDashStats(dashRes.data);
     } catch (err) {
       console.error("Fetch Insights Error:", err);
     } finally {
@@ -34,24 +38,22 @@ const AdminInsights = () => {
     fetchInsights();
   }, []);
 
-  const topSkills = data?.topSkills?.map(s => ({
-    name: s._id,
+  const topSkills = data?.data?.topSkills?.map(s => ({
+    name: s.name || s._id,
     frequency: s.count,
-    percentage: Math.min(100, (s.count / (data.totalSkills || 1)) * 500), // Adjusted for visualization
-    trend: '+10%'
+    percentage: Math.min(100, (s.count / 10) * 100), 
+    trend: `${s.count} nodes`
   })) || [];
 
-  const activeStudents = data?.studentsLeadership?.map(s => ({
-    name: s.name,
-    skills: s.skillCount,
-    verifications: s.skillCount, // Simplified for now
-    activity: s.skillCount > 10 ? 'High' : 'Active'
-  })) || [];
+  // Top students not yet provided by backend — renders empty gracefully
+  const activeStudents = [];
 
-  const activitySummary = [
-    { id: 1, type: 'Verification', detail: 'Latest skills telemetry synced.', time: 'Just now' },
-    { id: 2, type: 'System', detail: 'Matrix Core health check passed.', time: '1h ago' },
-  ];
+  const activitySummary = data?.data?.recentActivities?.map((act, i) => ({
+    id: act.id || i,
+    type: act.activityType || 'System',
+    detail: act.title || 'Platform update',
+    time: act.date ? new Date(act.date).toLocaleDateString() : 'Just now'
+  })) || [];
 
   return (
     <div className="space-y-12">
@@ -82,31 +84,31 @@ const AdminInsights = () => {
          <div className="arch-card border-l-4 border-l-primary p-8 space-y-6 group hover:shadow-xl transition-all">
             <div className="flex justify-between items-start">
                <div className="w-10 h-10 border border-border flex items-center justify-center p-2 group-hover:bg-primary group-hover:text-white transition-all text-white"><Users size={20} /></div>
-               <span className="text-[9px] font-black uppercase tracking-widest text-accent bg-accent/5 px-2 py-1">+14.2% Growth</span>
+               <span className="text-[9px] font-black uppercase tracking-widest text-accent bg-accent/5 px-2 py-1">Students</span>
             </div>
             <div className="space-y-1">
                <h3 className="text-[10px] font-black uppercase text-white/30 tracking-widest">Total Students</h3>
-               <p className="text-4xl font-black text-white tracking-tighter">18.4K</p>
+               <p className="text-4xl font-black text-white tracking-tighter">{dashStats?.totalStudents ?? '—'}</p>
             </div>
          </div>
          <div className="arch-card border-l-4 border-l-primary p-8 space-y-6 group hover:shadow-xl transition-all">
             <div className="flex justify-between items-start">
                <div className="w-10 h-10 border border-border flex items-center justify-center p-2 group-hover:bg-primary group-hover:text-white transition-all text-white"><Zap size={20} /></div>
-               <span className="text-[9px] font-black uppercase tracking-widest text-accent bg-accent/5 px-2 py-1">+6.8% Velocity</span>
+               <span className="text-[9px] font-black uppercase tracking-widest text-accent bg-accent/5 px-2 py-1">Approved</span>
             </div>
             <div className="space-y-1">
                <h3 className="text-[10px] font-black uppercase text-white/30 tracking-widest">Approved Skills</h3>
-               <p className="text-4xl font-black text-white tracking-tighter">924</p>
+               <p className="text-4xl font-black text-white tracking-tighter">{dashStats?.approvedSkills ?? '—'}</p>
             </div>
          </div>
          <div className="arch-card border-l-4 border-l-primary p-8 space-y-6 group hover:shadow-xl transition-all">
             <div className="flex justify-between items-start">
-               <div className="w-10 h-10 border border-border flex items-center justify-center p-2 group-hover:bg-primary group-hover:text-white transition-all text-white"><PlusCircle size={20} /></div>
-               <span className="text-[9px] font-black uppercase tracking-widest text-accent bg-accent/5 px-2 py-1">Optimal health</span>
+               <div className="w-10 h-10 border border-border flex items-center justify-center p-2 group-hover:bg-primary group-hover:text-white transition-all text-white"><Globe size={20} /></div>
+               <span className="text-[9px] font-black uppercase tracking-widest text-accent bg-accent/5 px-2 py-1">Collaborations</span>
             </div>
             <div className="space-y-1">
-               <h3 className="text-[10px] font-black uppercase text-white/30 tracking-widest">System Health</h3>
-               <p className="text-4xl font-black text-white tracking-tighter">98.4%</p>
+               <h3 className="text-[10px] font-black uppercase text-white/30 tracking-widest">Total Collaborations</h3>
+               <p className="text-4xl font-black text-white tracking-tighter">{dashStats?.totalCollaborations ?? '—'}</p>
             </div>
          </div>
       </div>

@@ -10,9 +10,11 @@ import {
   FileText, 
   CheckCircle2,
   Clock,
-  MoreVertical,
   Mail,
-  Phone
+  Phone,
+  Edit2,
+  Save,
+  X
 } from 'lucide-react';
 
 import API from '../api';
@@ -21,7 +23,23 @@ import { getUser } from '../utils/getUser';
 const StudentProfile = () => {
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const user = getUser();
+
+  // Editable profile state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editEmail, setEditEmail] = useState(user?.email || '');
+  const [editBio, setEditBio] = useState(
+    'I build modern websites with React and focus on great design. I love working with students from other colleges.'
+  );
+  // Saved display values
+  const [displayName, setDisplayName] = useState(user?.name || 'User Name');
+  const [displayEmail, setDisplayEmail] = useState(user?.email || '');
+  const [displayBio, setDisplayBio] = useState(
+    'I build modern websites with React and focus on great design. I love working with students from other colleges.'
+  );
 
   useEffect(() => {
     if (!user || !user._id) return;
@@ -46,6 +64,39 @@ const StudentProfile = () => {
 
     fetchSkills();
   }, [user?._id]);
+
+  const handleEditToggle = () => {
+    setEditName(displayName);
+    setEditEmail(displayEmail);
+    setEditBio(displayBio);
+    setSaveError(null);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setSaveError(null);
+  };
+
+  const handleSave = async () => {
+    if (!editName.trim()) return;
+    setSaveLoading(true);
+    setSaveError(null);
+    try {
+      if (user?._id) {
+        await API.put(`/user/profile/${user._id}`, { name: editName });
+      }
+      setDisplayName(editName);
+      setDisplayEmail(editEmail);
+      setDisplayBio(editBio);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Save Profile Error:", err);
+      setSaveError(err.response?.data?.message || 'Failed to save profile.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   const [newSkill, setNewSkill] = useState({ name: '', repo: '', file: null });
   const [submitting, setSubmitting] = useState(false);
@@ -119,7 +170,16 @@ const StudentProfile = () => {
             </div>
           </div>
           <div className="text-center lg:text-left space-y-1">
-            <h1 className="text-2xl font-black text-white uppercase tracking-tighter">{user?.name || 'User Name'}</h1>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                className="text-xl font-black text-white uppercase tracking-tighter bg-background border border-accent p-2 w-full focus:outline-none focus:ring-2 focus:ring-accent/30"
+              />
+            ) : (
+              <h1 className="text-2xl font-black text-white uppercase tracking-tighter">{displayName}</h1>
+            )}
             <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">{user?.role || 'Student'}</p>
           </div>
         </div>
@@ -145,12 +205,21 @@ const StudentProfile = () => {
                    <Mail size={14} />
                    <span className="text-[10px] font-black uppercase tracking-widest">Official Email</span>
                 </div>
-                <input 
-                  type="email" 
-                  disabled
-                  value={user?.email || ''}
-                  className="w-full bg-background/50 border border-border/80 p-3 text-sm font-bold text-white uppercase tracking-wider cursor-not-allowed rounded-md shadow-sm"
-                />
+                {isEditing ? (
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={e => setEditEmail(e.target.value)}
+                    className="w-full bg-background border border-accent/60 p-3 text-sm font-bold text-white uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  />
+                ) : (
+                  <input 
+                    type="email" 
+                    disabled
+                    value={displayEmail}
+                    className="w-full bg-background/50 border border-border/80 p-3 text-sm font-bold text-white uppercase tracking-wider cursor-not-allowed rounded-md shadow-sm"
+                  />
+                )}
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-white/40">
@@ -164,13 +233,50 @@ const StudentProfile = () => {
            </div>
 
            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-white/40">
-                 <Info size={14} />
-                 <span className="text-[10px] font-black uppercase tracking-widest">About Me</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white/40">
+                   <Info size={14} />
+                   <span className="text-[10px] font-black uppercase tracking-widest">About Me</span>
+                </div>
+                {!isEditing ? (
+                  <button
+                    onClick={handleEditToggle}
+                    className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.3em] text-white/50 hover:text-accent transition-colors"
+                  >
+                    <Edit2 size={12} /> Edit Profile
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={handleCancel}
+                      className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                    >
+                      <X size={12} /> Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={saveLoading}
+                      className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.2em] text-accent hover:text-accent-bright transition-colors disabled:opacity-50"
+                    >
+                      <Save size={12} /> {saveLoading ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                )}
               </div>
-              <p className="text-sm font-medium text-text/70 leading-relaxed max-w-2xl bg-background p-6 border border-border italic">
-                I build modern websites with React and focus on great design. I love working with students from other colleges.
-              </p>
+              {isEditing ? (
+                <textarea
+                  value={editBio}
+                  onChange={e => setEditBio(e.target.value)}
+                  className="w-full bg-black/40 border border-accent/60 text-sm font-medium leading-relaxed text-white p-6 focus:border-accent outline-none min-h-[100px]"
+                />
+              ) : (
+                <p className="text-sm font-medium text-text/70 leading-relaxed max-w-2xl bg-background p-6 border border-border italic">
+                  {displayBio}
+                </p>
+              )}
+              {saveError && (
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">{saveError}</p>
+              )}
            </div>
         </div>
       </motion.div>
@@ -273,9 +379,6 @@ const StudentProfile = () => {
                             <Clock size={12} />
                             <span className="text-[9px] font-black uppercase tracking-widest">{skill.date}</span>
                          </div>
-                         <button className="btn btn-secondary">
-                            <MoreVertical size={16} />
-                         </button>
                       </div>
                    </div>
                 </motion.div>

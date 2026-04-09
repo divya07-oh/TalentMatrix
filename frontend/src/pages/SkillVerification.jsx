@@ -7,8 +7,6 @@ import {
   Check, 
   X, 
   Send,
-  Search,
-  Filter,
   User,
   UserCircle,
   Bell,
@@ -67,19 +65,6 @@ const SkillVerification = () => {
             <span className="text-[10px] font-black uppercase tracking-[0.4em]">Skill Approval</span>
           </div>
           <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic">Approval <span className="text-stroke-accent">Center</span></h1>
-        </div>
-        <div className="flex items-center gap-4">
-            <div className="relative group">
-                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-accent transition-colors" />
-                <input 
-                    type="text" 
-                    placeholder="Search students..."
-                    className="bg-background border border-border p-3 pl-12 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent transition-all min-w-[240px]"
-                />
-            </div>
-            <button className="btn btn-secondary font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                <Filter size={14} /> Sort
-            </button>
         </div>
       </div>
 

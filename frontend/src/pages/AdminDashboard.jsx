@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { 
   Users, 
   Clock, 
-  PlusCircle,
   Layers
 } from 'lucide-react';
 import API from '../api';
@@ -11,6 +10,13 @@ import API from '../api';
 const AdminDashboard = () => {
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bio, setBio] = useState('Leading the way in student innovation and cross-college collaboration. Our institution fosters a culture of excellence and interdisciplinary research.');
+
+  const handleBioSave = () => {
+    setIsEditingBio(false);
+    // Add API call here when ready
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -55,9 +61,6 @@ const AdminDashboard = () => {
               {/* College Logo Square */}
               <div className="w-48 h-48 bg-accent flex items-center justify-center relative shadow-[0_0_40px_rgba(212,175,55,0.2)]">
                  <span className="text-8xl font-black text-black">S</span>
-                 <button className="absolute bottom-4 right-4 w-10 h-10 bg-black/80 hover:bg-black flex items-center justify-center text-white transition-colors">
-                    <PlusCircle size={18} />
-                 </button>
               </div>
 
               {/* College Details Form Aesthetic */}
@@ -77,10 +80,28 @@ const AdminDashboard = () => {
                  </div>
 
                  <div className="space-y-4">
-                    <label className="text-[9px] font-black uppercase tracking-[0.5em] text-accent px-1">Our Mission / Bio</label>
-                    <p className="text-sm font-medium leading-relaxed text-white/60 bg-black/20 p-6 border-l-2 border-accent">
-                       Leading the way in student innovation and cross-college collaboration. Our institution fosters a culture of excellence and interdisciplinary research.
-                    </p>
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[9px] font-black uppercase tracking-[0.5em] text-accent">Our Mission / Bio</label>
+                      {isEditingBio ? (
+                        <div className="space-x-4">
+                          <button onClick={() => setIsEditingBio(false)} className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">Cancel</button>
+                          <button onClick={handleBioSave} className="text-[9px] font-black uppercase tracking-[0.2em] text-accent hover:text-accent-bright transition-colors">Save</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setIsEditingBio(true)} className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">Edit</button>
+                      )}
+                    </div>
+                    {isEditingBio ? (
+                      <textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        className="w-full bg-black/40 border border-white/5 text-sm font-medium leading-relaxed text-white p-6 focus:border-accent outline-none min-h-[120px]"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium leading-relaxed text-white/60 bg-black/20 p-6 border-l-2 border-accent whitespace-pre-wrap">
+                         {bio}
+                      </p>
+                    )}
                  </div>
               </div>
 

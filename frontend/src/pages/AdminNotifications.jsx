@@ -7,55 +7,75 @@ import {
   Info, 
   Trash2, 
   Check, 
-  Filter,
-  MoreVertical,
   Activity as ActivityIcon,
-  Layers,
-  Search
+  Layers
 } from 'lucide-react';
+
+import API from '../api';
 
 const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log("Calling API: GET /api/notifications/system");
-    setTimeout(() => {
-      const mockNotifs = [
-        { id: 1, type: 'verification', message: 'New Skill Verification Request: Node s-102 (Alex Rivera) submitted "React Architecture".', time: '2m ago', read: false, priority: 'high' },
-        { id: 2, type: 'system', message: 'Global Database Synchronized. Campus Node Sync completed for Sector A-7.', time: '14m ago', read: true, priority: 'low' },
-        { id: 3, type: 'alert', message: 'Suspicious Activity Detected: Multiple failed login attempts on Node s-4402.', time: '1h ago', read: false, priority: 'critical' },
-        { id: 4, type: 'collab', message: 'Partnership Signal Initiated: New collaboration request between Node s-220 and Node s-91.', time: '3h ago', read: false, priority: 'medium' },
-        { id: 5, type: 'system', message: 'System Backup Successful. All encrypted data fragments verified.', time: '1d ago', read: true, priority: 'low' }
-      ];
-      console.log("Response:", { success: true, count: 5, data: mockNotifs });
-      setNotifications(mockNotifs);
-    }, 1000);
+    const fetchAdminNotifications = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // Use a fixed admin userId placeholder; in future pass real admin user._id
+        const response = await API.get('/notifications/admin');
+        const data = response.data.userNotifications || response.data.notifications || [];
+        setNotifications(data.map((n, i) => ({
+          id: n._id || i,
+          type: n.type || 'system',
+          message: n.message,
+          time: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recently',
+          read: n.read || false,
+          priority: n.priority || 'low'
+        })));
+      } catch (err) {
+        console.error('Admin Notifications Error:', err);
+        setError('Failed to load notifications.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminNotifications();
   }, []);
 
-  const toggleRead = (id) => {
-    console.log(`Calling API: PUT /api/notifications/read/${id}`);
-    setTimeout(() => {
-       console.log("Response:", { success: true, message: "Notification status toggled" });
-       setNotifications(notifications.map(n => 
-         n.id === id ? { ...n, read: !n.read } : n
-       ));
-    }, 300);
+  const toggleRead = async (id) => {
+    try {
+      await API.put(`/notifications/read/${id}`);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: !n.read } : n
+      ));
+    } catch (err) {
+      console.error('Toggle Read Error:', err);
+    }
   };
 
-  const markAllRead = () => {
-    console.log("Calling API: DELETE /api/notifications/clear/system");
-    setTimeout(() => {
-       console.log("Response:", { success: true, message: "All notifications read/cleared" });
-       setNotifications(notifications.map(n => ({ ...n, read: true })));
-    }, 500);
+  const markAllRead = async () => {
+    try {
+      setLoading(true);
+      await API.delete('/notifications/clear/admin');
+      setNotifications([]);
+    } catch (err) {
+      console.error('Clear All Admin Notifications Error:', err);
+      setError('Failed to clear notifications.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteNotification = (id) => {
-    console.log(`Calling API: DELETE /api/notifications/${id}`);
-    setTimeout(() => {
-       console.log("Response:", { success: true, message: "Notification deleted" });
-       setNotifications(notifications.filter(n => n.id !== id));
-    }, 300);
+  const deleteNotification = async (id) => {
+    try {
+      await API.delete(`/notifications/${id}`);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (err) {
+      console.error('Delete Notification Error:', err);
+    }
   };
 
   return (
@@ -72,30 +92,37 @@ const AdminNotifications = () => {
         <div className="flex items-center gap-4">
             <button 
                onClick={markAllRead}
-               className="btn btn-secondary font-black uppercase tracking-[0.3em] flex items-center gap-2"
+               disabled={loading || notifications.length === 0}
+               className="btn btn-secondary font-black uppercase tracking-[0.3em] flex items-center gap-2 disabled:opacity-50"
             >
                 <CheckCircle2 size={14} /> Clear All
-            </button>
-            <button className="btn btn-secondary font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                <Filter size={14} /> Sort
             </button>
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 border border-red-500/30 bg-red-50/5 text-red-400 text-[10px] font-black uppercase tracking-widest">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center py-20 text-white/30 text-[10px] font-black uppercase tracking-widest animate-pulse">
+          Loading Notifications...
+        </div>
+      )}
+
       <div className="flex justify-center max-w-4xl mx-auto">
          {/* Notifications Feed Area */}
          <div className="w-full space-y-6">
-            <div className="relative group">
-                <Search size={14} className="absolute left-6 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-accent transition-colors" />
-                <input 
-                    type="text" 
-                    placeholder="Search messages..."
-                    className="w-full bg-transparent border border-border p-5 pl-14 text-[11px] font-black uppercase tracking-widest focus:outline-none focus:border-accent transition-all shadow-sm rounded-md"
-                />
-            </div>
-
             <div className="space-y-4">
                <AnimatePresence mode="popLayout">
+                  {!loading && notifications.length === 0 && !error && (
+                    <div className="py-24 arch-card border-dashed border-border flex flex-col items-center justify-center space-y-6 opacity-40">
+                      <Bell size={32} className="text-white/20" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40">No notifications</p>
+                    </div>
+                  )}
                   {notifications.map((notif, idx) => (
                      <motion.div 
                         key={notif.id}
@@ -158,7 +185,7 @@ const AdminNotifications = () => {
                         {/* Aesthetic Footer Border */}
                         <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-border to-transparent"></div>
                      </motion.div>
-                  )) }
+                  ))}
                </AnimatePresence>
             </div>
          </div>
