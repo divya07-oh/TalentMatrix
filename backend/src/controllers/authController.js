@@ -22,16 +22,16 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format." });
     }
 
-    // 2. Determine Role based on email
-    const isAdminEmail = email.startsWith('admin@') && email.endsWith('.edu');
-    const role = isAdminEmail ? 'admin' : 'student';
+    // 2. Determine Role: trust frontend role field if provided, else detect from email
+    const isAdminEmail = email.startsWith('admin@');
+    const role = (req.body.role === 'admin' || isAdminEmail) ? 'admin' : 'student';
 
     // 3. Handle College ID requirement
     // Admins don't need to specify a college, we give them a default node
     const finalCollegeId = (role === 'admin' && !collegeId) ? 'ADMIN-HQ' : collegeId;
 
     if (!name || !password || !finalCollegeId) {
-      return res.status(400).json({ message: "Name, password, and collegeId (for students) are required." });
+      return res.status(400).json({ message: "Name, password, and college are required." });
     }
 
     const existingUser = await User.findOne({ email });

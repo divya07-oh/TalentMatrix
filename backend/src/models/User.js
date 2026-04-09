@@ -7,8 +7,7 @@ const userSchema = new mongoose.Schema({
     required: true, 
     unique: true,
     lowercase: true,
-    trim: true,
-    match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/, "Use college email"]
+    trim: true
   },
   password: { type: String, required: true, minlength: 6 },
   role: { type: String, enum: ['student', 'admin'], default: 'student' },
