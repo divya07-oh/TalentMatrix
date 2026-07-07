@@ -103,6 +103,7 @@ const Signup = () => {
               required
               name="name"
               type="text" 
+              value={formData.name}
               placeholder="Your full name"
               onChange={handleInputChange}
               className="w-full bg-background border border-border p-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
@@ -116,6 +117,7 @@ const Signup = () => {
                 required
                 name="college"
                 type="text" 
+                value={formData.college}
                 placeholder="Your college name"
                 onChange={handleInputChange}
                 className="w-full bg-background border border-border/80 p-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all rounded-md shadow-sm"
@@ -129,6 +131,7 @@ const Signup = () => {
               required
               name="email"
               type="email" 
+              value={formData.email}
               placeholder={role === 'student' ? "name@college.edu" : "admin@college.edu"}
               onChange={handleInputChange}
               className="w-full bg-background border border-border p-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
@@ -142,6 +145,7 @@ const Signup = () => {
                 required
                 name="github"
                 type="text" 
+                value={formData.github}
                 placeholder="Your Git username"
                 onChange={handleInputChange}
                 className="w-full bg-background border border-border/80 p-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all rounded-md shadow-sm"
@@ -155,6 +159,8 @@ const Signup = () => {
               required
               name="password"
               type="password" 
+              value={formData.password}
+              minLength="6"
               placeholder="••••••••"
               onChange={handleInputChange}
               className="w-full bg-background border border-border/80 p-3 text-xs font-bold tracking-widest focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all rounded-md shadow-sm"
