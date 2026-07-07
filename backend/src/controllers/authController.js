@@ -9,7 +9,7 @@ const validateEmail = (email) => {
 // POST /api/auth/signup
 exports.signup = async (req, res) => {
   try {
-    let { name, email, password, collegeId } = req.body;
+    let { name, email, password, collegeId, github } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required." });
@@ -44,7 +44,8 @@ exports.signup = async (req, res) => {
       email,
       password, // Note: hash in production
       role,
-      collegeId: finalCollegeId
+      collegeId: finalCollegeId,
+      github
     });
 
     await newUser.save();
@@ -65,6 +66,13 @@ exports.signup = async (req, res) => {
 
   } catch (error) {
     console.error("Signup Error:", error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "User with this email already exists." });
+    }
     res.status(500).json({ message: "Internal server error during signup." });
   }
 };

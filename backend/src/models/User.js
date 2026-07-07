@@ -11,7 +11,8 @@ const userSchema = new mongoose.Schema({
   },
   password: { type: String, required: true, minlength: 6 },
   role: { type: String, enum: ['student', 'admin'], default: 'student' },
-  collegeId: { type: String, required: true }
+  collegeId: { type: String, required: true },
+  github: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

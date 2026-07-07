@@ -37,7 +37,8 @@ const Signup = () => {
         email: normalizedEmail,
         password: formData.password,
         collegeId: role === 'admin' ? 'ADMIN-HQ' : normalizedCollege,
-        role: role // Send selected role explicitly
+        role: role, // Send selected role explicitly
+        github: formData.github
       };
       
       const response = await API.post('/auth/signup', payload);
